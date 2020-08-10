@@ -65,7 +65,7 @@ module PayrollElemBuilder =
 
 [<AutoOpen>]
 module PayrollElems =
-    let elem = new PayrollElemBuilder.PayrollElemBuilder()
+    let elem = PayrollElemBuilder.PayrollElemBuilder()
 
     let (<!>) = PayrollElem.map
     let (<*>) = PayrollElem.apply

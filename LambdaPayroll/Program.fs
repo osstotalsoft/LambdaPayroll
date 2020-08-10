@@ -2,6 +2,7 @@
 open Core
 open SamplePayrollScheme
 open NBB.Core.Effects.FSharp
+open System
 
 let mainEff _argv = 
     effect {
@@ -41,6 +42,7 @@ let mainEff _argv =
         let! nowAgain = eval now (ContractId 1) (YearMonth (2020, 7))
         printfn "now = %A" nowAgain
 
+        Console.ReadKey() |> ignore
 
         return 0
     }

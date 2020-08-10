@@ -13,7 +13,7 @@ let esteActiv = HrAdmin.readFromDb<bool> "esteActiv"
 
 
 //payroll constants
-let procentImpozit = Payroll.constant 0.23456m  |> log "procentImpozit" |> memoize
+let procentImpozit = Payroll.constant 0.23456m  //|> log "procentImpozit" |> memoize
 
 
 //payroll lazy computed values
@@ -58,7 +58,7 @@ let esteContractPrincipalSiAreVreunContractInactivLunaTrecuta =
 
 let esteActivUltimele3Luni = 
     select esteActiv 
-    |> from last_N_Months 3 
+    |> from lastNMonths 3 
     |> all
 
 
@@ -96,18 +96,18 @@ let sumaImpozitelorPeToateContractele' = sum (allEmployeeContracts impozit)
 
 
 
-let salariuNet = salariuBrut - impozit |> log "salariuNet" |> memoize
+let salariuNet = salariuBrut - impozit //|> log "salariuNet" |> memoize
 let diferentaNetFataDeLunaTrecuta = salariuNet - (salariuNet |> from lastMonth)
 
 let mediaSalariuluiNetPeUltimele3Luni = 
     select salariuNet 
-    |> from last_N_Months 3
+    |> from lastNMonths 3
     |> avg
 
 
 let ultimele3Luni = 
     select anLuna
-    |> from last_N_Months 3
+    |> from lastNMonths 3
 
 
 //let activInUltimele3Luni = ultimele3Luni >=> (fun luni -> luni |> List.map (fun luna -> salariuNet |> inMonth luna))
