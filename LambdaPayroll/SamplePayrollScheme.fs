@@ -18,7 +18,7 @@ let procentImpozit = Payroll.constant 0.23456m  //|> log "procentImpozit" |> mem
 
 //payroll lazy computed values
 let now = 
-    fun _ _ -> effect {
+    fun _ -> effect {
         return DateTime.Now |> Ok
     }
 
@@ -70,13 +70,19 @@ let sumaImpozitelorNerotunjitePeToateContractele =
     |> sum
 
 let sumaImpozitelorNerotunjitePeContracteleSecundare = 
+    select impozitNerotunjit
+    |> from allEmployeeContracts
+    |> where (not esteContractPrincipal)
+    |> sum
+
+let sumaImpozitelorNerotunjitePeContracteleSecundare' = 
     select When esteContractPrincipal 
         (constant 0m)
         impozitNerotunjit
     |> from allEmployeeContracts 
     |> sum
 
-let sumaImpozitelorNerotunjitePeContracteleSecundare' = 
+let sumaImpozitelorNerotunjitePeContracteleSecundare'' = 
     select When esteContractPrincipal 
         <| Then (constant 0m)
         <| Else impozitNerotunjit

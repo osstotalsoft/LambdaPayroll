@@ -32,7 +32,7 @@ let readFromDb<'a> (code:string) : PayrollElem<'a> =
     let cast (value:'b) = 
         if typeof<'a> = typeof<'b> then Ok (box value :?> 'a) else Error "Invalid elem type"
 
-    fun contractId yearMonth ->
+    fun (contractId, yearMonth) ->
         effect {
             let hrInfo = (hrDb.Item yearMonth).Item contractId
             match code with
