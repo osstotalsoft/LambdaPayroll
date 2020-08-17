@@ -12,55 +12,46 @@ module HrCombinators =
     let lastMonth (elem: PayrollElem<'a>): PayrollElem<'a> =
         fun (contractId, yearMonth) -> elem (contractId, (YearMonth.lastMonth yearMonth))
 
-    let nMonthsAgo (n: int) (elem: PayrollElem<'a>): PayrollElem<'a> =
+    let monthsAgo (n: int) (elem: PayrollElem<'a>): PayrollElem<'a> =
         fun (contractId, yearMonth) -> elem (contractId, (YearMonth.subStractMonth n yearMonth))
 
-    let lastNMonths (n: int) (elem: PayrollElem<'a>): PayrollElem<('a * PayrollElemContext) list> =
+    let lastNMonths (n: int): PayrollElem<PayrollElemContext list> =
         fun (contractId, yearMonth) ->
-            (List.map
-                ((fun x -> YearMonth.subStractMonth x yearMonth)
-                 >> (fun ym ->
-                     elem (contractId, ym)
-                     |> PayrollElemResult.map (fun x -> (x, (contractId, ym)))))
-                 [ 0 .. n - 1 ])
+            [ 0 .. n - 1 ]
+            |> List.map (fun x ->
+                let yearMonth' = YearMonth.subStractMonth x yearMonth
+                let ctx = (contractId, yearMonth')
+                PayrollElemResult.return' ctx)
             |> List.sequencePayrollElemResult
 
     let inMonth (yearMonth: YearMonth) (elem: PayrollElem<'a>): PayrollElem<'a> =
         fun (contractId, _yearMonth) -> elem (contractId, yearMonth)
 
 
-    let otherEmployeeContracts (elem: PayrollElem<'a>): PayrollElem<('a * PayrollElemContext) list> =
+    let otherEmployeeContracts: PayrollElem<PayrollElemContext list> =
         fun (contractId, yearMonth) ->
             effect {
                 let! otherContracts = HrAdmin.getOtherEmployeeContracts contractId
 
                 let otherContractsElemResults =
                     otherContracts
-                    |> List.map (fun otherContractId ->
-                        otherContractId
-                        |> fun x -> (x, yearMonth)
-                        |> elem
-                        |> PayrollElemResult.map (fun x -> (x, (otherContractId, yearMonth))))
-                    |> List.sequencePayrollElemResult
+                    |> List.map (fun x -> (x, yearMonth))
+                    |> PayrollElemResult.return'
 
                 return! otherContractsElemResults
             }
 
-    let allEmployeeContracts (elem: PayrollElem<'a>): PayrollElem<('a * PayrollElemContext) list> =
+    let allEmployeeContracts: PayrollElem<PayrollElemContext list> =
         fun (contractId, yearMonth) ->
             effect {
-                let! otherContracts = HrAdmin.getAllEmployeeContracts contractId
+                let! allContracts = HrAdmin.getAllEmployeeContracts contractId
 
-                let otherContractsElemResults =
-                    otherContracts
-                    |> List.map (fun otherContractId ->
-                        otherContractId
-                        |> fun x -> (x, yearMonth)
-                        |> elem
-                        |> PayrollElemResult.map (fun x -> (x, (otherContractId, yearMonth))))
-                    |> List.sequencePayrollElemResult
+                let allContractsElemResults =
+                    allContracts
+                    |> List.map (fun x -> (x, yearMonth))
+                    |> PayrollElemResult.return'
 
-                return! otherContractsElemResults
+                return! allContractsElemResults
             }
 
 [<AutoOpen>]
@@ -77,17 +68,17 @@ module NumericCombinators =
     let inline (/) (a: PayrollElem< ^a > when (^a or ^b): (static member (/): ^a * ^b -> ^c)) (b: PayrollElem< ^b >) =
         PayrollElem.lift2 (/) a b
 
-    // fsharplint:disable-next-line
+
     let ceiling (a: PayrollElem<decimal>) =
+        // fsharplint:disable-next-line
         PayrollElem.map (fun (d: decimal) -> Math.Ceiling d) a
 
-    let sum (xs: PayrollElem<(decimal * PayrollElemContext) list>) =
-        xs |> PayrollElem.map (List.map fst >> List.sum)
+    let inline sum (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a) and ^a: (static member Zero: ^a))
+                   : PayrollElem< ^a > =
+        xs |> PayrollElem.map List.sum
 
-    let avg (xs: PayrollElem<(decimal * PayrollElemContext) list>) =
-        xs
-        |> PayrollElem.map (List.map fst >> List.average)
-
+    let inline avg (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a)): PayrollElem< ^a > =
+        xs |> PayrollElem.map List.average
 
 [<AutoOpen>]
 module BooleanCombinators =
@@ -97,13 +88,9 @@ module BooleanCombinators =
             if cond' then return! e1 else return! e2
         }
 
-    let all (xs: PayrollElem<(bool * PayrollElemContext) list>) =
-        xs
-        |> PayrollElem.map (List.map fst >> List.reduce (&&))
+    let all = PayrollElem.map (List.reduce (&&))
 
-    let any (xs: PayrollElem<(bool * PayrollElemContext) list>) =
-        xs
-        |> PayrollElem.map (List.map fst >> List.reduce (||))
+    let any = PayrollElem.map (List.reduce (||))
 
     let (&&) = PayrollElem.lift2 (&&)
     let (||) = PayrollElem.lift2 (||)
@@ -140,18 +127,24 @@ module UtilityCombinators =
 [<AutoOpen>]
 module QueryCombinators =
     let from = id
-    let select = id
+
+    let select (selector: PayrollElem<'a>) (source: PayrollElem<PayrollElemContext list>): PayrollElem<'a list> =
+        source
+        >> PayrollElemResult.bind
+            (List.map selector
+             >> List.sequencePayrollElemResult)
+
     let Then = id
     let Else = id
 
     let where (predicate: PayrollElem<bool>)
-              (source: PayrollElem<('a * PayrollElemContext) list>)
-              : PayrollElem<('a * PayrollElemContext) list> =
+              (source: PayrollElem<PayrollElemContext list>)
+              : PayrollElem<PayrollElemContext list> =
         fun (ctx: PayrollElemContext) ->
             let mapping =
-                fun (x: 'a, ctx') ->
+                fun ctx' ->
                     predicate ctx'
-                    |> PayrollElemResult.map (fun b -> ((x, ctx'), b))
+                    |> PayrollElemResult.map (fun b -> (ctx', b))
 
             ctx
             |> source

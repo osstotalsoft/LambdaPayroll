@@ -7,121 +7,118 @@ open System
 open NBB.Core.Effects.FSharp
 
 //HrAdmin elems
-let salariuBrut = HrAdmin.readFromDb<decimal> "salariuBrut"
-let esteContractPrincipal = HrAdmin.readFromDb<bool> "esteContractPrincipal"
+let salariuBrut =
+    HrAdmin.readFromDb<decimal> "salariuBrut"
+
+let esteContractPrincipal =
+    HrAdmin.readFromDb<bool> "esteContractPrincipal"
+
 let esteActiv = HrAdmin.readFromDb<bool> "esteActiv"
 
 
 //payroll constants
-let procentImpozit = Payroll.constant 0.23456m  //|> log "procentImpozit" |> memoize
+let procentImpozit = Payroll.constant 0.23456m //|> log "procentImpozit" |> memoize
 
 
 //payroll lazy computed values
-let now = 
-    fun _ -> effect {
-        return DateTime.Now |> Ok
-    }
+let now =
+    fun _ -> effect { return DateTime.Now |> Ok }
 
 //Formula elems
 let nuEsteActiv = not esteActiv
 let esteContractPrincipalSiEsteActiv = esteContractPrincipal && esteActiv
 let esteContractPrincipalSiNuEsteActiv = esteContractPrincipal && not esteActiv
-let esteContractPrincipalSiEsteActivLunaTrecuta = esteContractPrincipal && lastMonth esteActiv
 
-let esteContractPrincipalSiEsteActivLunaTrecuta' = 
-    select esteContractPrincipal && esteActiv
-    |> from lastMonth
+let esteContractPrincipalSiEsteActivLunaTrecuta =
+    (esteContractPrincipal && esteActiv) |> lastMonth
 
-let esteContractPrincipalSiEsteActivAcum2Luni = 
-    select esteContractPrincipal && esteActiv 
-    |> from lastMonth |> lastMonth
+let esteContractPrincipalSiEsteActivAcum2Luni =
+    (esteContractPrincipal && esteActiv)
+    |> lastMonth
+    |> lastMonth
 
-let esteContractPrincipalSiNuEsteActivAcum2Luni = 
-    select esteContractPrincipal && not esteActiv 
-    |> from lastMonth 
-    |> from lastMonth
+let esteContractPrincipalSiNuEsteActivAcum2Luni =
+    (esteContractPrincipal && not esteActiv)
+    |> lastMonth
+    |> lastMonth
 
-let esteContractPrincipalSiNuEsteActivAcum3Luni = 
-    select esteContractPrincipal && not esteActiv 
-    |> from nMonthsAgo 3
+let esteContractPrincipalSiNuEsteActivAcum3Luni =
+    (esteContractPrincipal && not esteActiv)
+    |> monthsAgo 3
 
-let esteContractPrincipalSiAreToateContracteleActive = 
-    select esteContractPrincipal && esteActiv 
-    |> from allEmployeeContracts 
+let esteContractPrincipalSiAreToateContracteleActive =
+    from allEmployeeContracts
+    |> select (esteContractPrincipal && esteActiv)
     |> all
 
-let esteContractPrincipalSiAreVreunContractInactivLunaTrecuta = 
-    select esteContractPrincipal && not esteActiv 
-    |> from lastMonth 
-    |> from allEmployeeContracts 
+let esteContractPrincipalSiAreVreunContractInactivLunaTrecuta =
+    from allEmployeeContracts
+    |> select (esteContractPrincipal && not esteActiv)
+    |> lastMonth
     |> any
 
-let esteActivUltimele3Luni = 
-    select esteActiv 
-    |> from lastNMonths 3 
-    |> all
+let esteActivInToateUltimele3Luni =
+    from lastNMonths 3 |> select esteActiv |> all
 
-
-
-let impozitNerotunjit = procentImpozit * salariuBrut
-let sumaImpozitelorNerotunjitePeToateContractele = 
-    select impozitNerotunjit 
-    |> from allEmployeeContracts 
-    |> sum
-
-let sumaImpozitelorNerotunjitePeContracteleSecundare = 
-    select impozitNerotunjit
-    |> from allEmployeeContracts
-    |> where (not esteContractPrincipal)
-    |> sum
-
-let sumaImpozitelorNerotunjitePeContracteleSecundare' = 
-    select When esteContractPrincipal 
-        (constant 0m)
-        impozitNerotunjit
-    |> from allEmployeeContracts 
-    |> sum
-
-let sumaImpozitelorNerotunjitePeContracteleSecundare'' = 
-    select When esteContractPrincipal 
-        <| Then (constant 0m)
-        <| Else impozitNerotunjit
-    |> from allEmployeeContracts 
-    |> sum
-
-let impozit = 
-    When esteContractPrincipal
-        (ceiling sumaImpozitelorNerotunjitePeToateContractele - sumaImpozitelorNerotunjitePeContracteleSecundare)
-        impozitNerotunjit
-
-
-let impoziteleNerotunjitePeToateContractele = impozitNerotunjit |> from allEmployeeContracts
-let impozitelePeToateContractele = impozit |> allEmployeeContracts
-let sumaImpozitelorPeToateContractele = impozit |> allEmployeeContracts |> sum
-let sumaImpozitelorPeToateContractele' = sum (allEmployeeContracts impozit)
-
-
-
-let salariuNet = salariuBrut - impozit //|> log "salariuNet" |> memoize
-let diferentaNetFataDeLunaTrecuta = salariuNet - (salariuNet |> from lastMonth)
-
-let mediaSalariuluiNetPeUltimele3Luni = 
-    select salariuNet 
-    |> from lastNMonths 3
+let mediaSalariuluiBrutInUltimele3LuniActive =
+    from (lastNMonths 3)
+    |> where esteActiv
+    |> select salariuBrut
     |> avg
 
 
-let ultimele3Luni = 
-    select anLuna
-    |> from lastNMonths 3
+let impozitNerotunjit = procentImpozit * salariuBrut
+
+let sumaImpozitelorNerotunjitePeToateContractele =
+    from allEmployeeContracts
+    |> select impozitNerotunjit
+    |> sum
+
+let sumaImpozitelorNerotunjitePeContracteleSecundare =
+    from allEmployeeContracts
+    |> where (not esteContractPrincipal)
+    |> select impozitNerotunjit
+    |> sum
+
+let sumaImpozitelorNerotunjitePeContracteleSecundare' =
+    from allEmployeeContracts
+    |> select (When esteContractPrincipal (constant 0m) impozitNerotunjit)
+    |> sum
+
+let sumaImpozitelorNerotunjitePeContracteleSecundare'' =
+    from allEmployeeContracts
+    |> select
+        (When esteContractPrincipal
+         <| Then(constant 0m)
+         <| Else impozitNerotunjit)
+    |> sum
+
+let impozit =
+    When
+        esteContractPrincipal
+        (ceiling sumaImpozitelorNerotunjitePeToateContractele
+         - sumaImpozitelorNerotunjitePeContracteleSecundare)
+        impozitNerotunjit
 
 
-//let activInUltimele3Luni = ultimele3Luni >=> (fun luni -> luni |> List.map (fun luna -> salariuNet |> inMonth luna))
+let impoziteleNerotunjitePeToateContractele =
+    from allEmployeeContracts
+    |> select impozitNerotunjit
+
+let impozitelePeToateContractele =
+    from allEmployeeContracts |> select impozit
+
+let sumaImpozitelorPeToateContractele =
+    from allEmployeeContracts |> select impozit |> sum
 
 
+let salariuNet = salariuBrut - impozit //|> log "salariuNet" |> memoize
 
-        
+let diferentaNetFataDeLunaTrecuta =
+    salariuNet - (salariuNet |> from lastMonth)
+
+let mediaSalariuluiNetPeUltimele3Luni =
+    from lastNMonths 3 |> select salariuNet |> avg
 
 
-
-
+let ultimele3Luni = from lastNMonths 3 |> select yearMonth
