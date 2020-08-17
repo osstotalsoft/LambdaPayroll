@@ -15,7 +15,7 @@ module HrCombinators =
     let monthsAgo (n: int) (elem: PayrollElem<'a>): PayrollElem<'a> =
         fun (contractId, yearMonth) -> elem (contractId, (YearMonth.subStractMonth n yearMonth))
 
-    let lastNMonths (n: int): PayrollElem<PayrollElemContext list> =
+    let lastMonths (n: int): PayrollElem<PayrollElemContext list> =
         fun (contractId, yearMonth) ->
             [ 0 .. n - 1 ]
             |> List.map (fun x ->

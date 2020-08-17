@@ -44,7 +44,7 @@ let esteContractPrincipalSiNuEsteActivAcum2Luni =
 
 let esteContractPrincipalSiNuEsteActivAcum3Luni =
     (esteContractPrincipal && not esteActiv)
-    |> monthsAgo 3
+    |> (3 |> monthsAgo)
 
 let esteContractPrincipalSiAreToateContracteleActive =
     from allEmployeeContracts
@@ -58,14 +58,13 @@ let esteContractPrincipalSiAreVreunContractInactivLunaTrecuta =
     |> any
 
 let esteActivInToateUltimele3Luni =
-    from lastNMonths 3 |> select esteActiv |> all
+    from 3 |> lastMonths |> select esteActiv |> all
 
 let mediaSalariuluiBrutInUltimele3LuniActive =
-    from (lastNMonths 3)
+    from 3 |> lastMonths
     |> where esteActiv
     |> select salariuBrut
     |> avg
-
 
 let impozitNerotunjit = procentImpozit * salariuBrut
 
@@ -118,7 +117,7 @@ let diferentaNetFataDeLunaTrecuta =
     salariuNet - (salariuNet |> from lastMonth)
 
 let mediaSalariuluiNetPeUltimele3Luni =
-    from lastNMonths 3 |> select salariuNet |> avg
+    from 3 |> lastMonths |> select salariuNet |> avg
 
 
-let ultimele3Luni = from lastNMonths 3 |> select yearMonth
+let ultimele3Luni = from 3 |> lastMonths |> select yearMonth
