@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup Label="Package Versions">
+    <NBBPackagesVersion>4.2.3</NBBPackagesVersion>
+  </PropertyGroup>
+</Project>

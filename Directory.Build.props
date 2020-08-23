@@ -1,0 +1,7 @@
+<Project>
+  <Import Project="dependencies.props" />
+  <PropertyGroup>
+    <Authors>Totalsoft</Authors>
+    <Company>Totalsoft</Company>
+  </PropertyGroup>
+</Project>

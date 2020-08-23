@@ -1,26 +1,70 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
+  
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Core.fs" />
-    <Compile Include="HrAdmin.fs" />
-    <Compile Include="ElemCache.fs" />
-    <Compile Include="Combinators.fs" />
-    <Compile Include="DefaultPayrollElems.fs" />
+    <None Include="App.config" />
+    <Compile Include="Domain\Core.fs" />
+    <Compile Include="Domain\ElemCache.fs" />
+    <Compile Include="Domain\DefaultPayrollElems.fs" />
+    <Compile Include="Domain\Common.fs" />
+    <Compile Include="Domain\ElemDefinitionStoreAggregate.fs" />
+    <Compile Include="Domain\HrAdmin.fs" />
+    <Compile Include="Domain\Combinators.fs" />
+    <Compile Include="Domain\CodeGeneration.fs" />
+    <Compile Include="Domain\DynamicAssembly.fs" />
+    <Compile Include="Domain\ElemEvaluationService.fs" />
+    <Compile Include="PublishedLanguage\Commands.fs" />
+    <Compile Include="PublishedLanguage\Events.fs" />
+    <Compile Include="Application\Common.fs" />
+    <Compile Include="Application\ElemDefinition.fs" />
+    <Compile Include="Application\Evaluation.fs" />
+    <Compile Include="Application\Compilation.fs" />
+    <Compile Include="Infra\CommandHandler.fs" />
+    <Compile Include="Infra\Common.fs" />
+    <Compile Include="Infra\DataAccess.fs" />
+    <Compile Include="Infra\DynamicAssembly.fs" />
+    <Compile Include="Infra\GeneratedCode.fs" />
     <Compile Include="SamplePayrollScheme.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NBB.Core.Effects.FSharp" Version="4.2.1" />
+    <PackageReference Include="FSharp.Compiler.Service" Version="36.0.3" />
+    <PackageReference Include="FSharp.Configuration" Version="2.0.0-alpha2" />
+    <PackageReference Include="FSharp.Data.SqlClient" Version="2.0.6" />
+    <PackageReference Include="NBB.Application.DataContracts" Version="$(NBBPackagesVersion)" />
+    <PackageReference Include="NBB.Core.Effects.FSharp" Version="$(NBBPackagesVersion)" />
+    <PackageReference Include="NBB.Core.Evented.FSharp" Version="$(NBBPackagesVersion)" />
+    <PackageReference Include="NBB.Messaging.Effects" Version="$(NBBPackagesVersion)" />
+
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Update="FSharp.Core" Version="4.7.1" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <SqlFiles Include="..\LambdaPayroll.Migrations\**\*.sql" />
+    <UpToDateCheckInput Include="@(SqlFiles)" />
+  </ItemGroup>
+  
+  <Target Name="TouchProjectFileIfSqlOrDbChanged" BeforeTargets="BeforeBuild" Inputs="@(SqlFiles)" Outputs="$(MSBuildProjectFile)">
+    <Message Text="SQL or DB files changed. Changing project file modification time to force recompilation." Importance="High" />
+    <Exec Command="PowerShell -NoProfile -ExecutionPolicy Bypass -Command &quot;(dir $(MSBuildProjectFile)).LastWriteTime = Get-Date&quot;" />
+  </Target>
+  
+  <Target Name="BuildDb" BeforeTargets="BeforeBuild">
+    <XmlPeek XmlInputPath="App.config" Query="configuration/connectionStrings/add[@name='LambdaPayroll']/@connectionString">
+        <Output TaskParameter="Result" ItemName="connectionString" />
+    </XmlPeek>
+    <Message Text="------ Building dev database: Connection string @(connectionString). ------" Importance="high" />
+    <Exec Command="dotnet run -p ..\LambdaPayroll.Migrations\LambdaPayroll.Migrations.fsproj -- --drop &quot;@(connectionString)&quot;" />
+  </Target>
+
+
 
 </Project>

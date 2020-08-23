@@ -2,10 +2,12 @@
 
 open NBB.Core.Effects.FSharp
 
-type PayrollElem<'a> = ContractId -> YearMonth -> PayrollElemResult<'a>
-    and PayrollElemResult<'a> = Effect<Result<'a, string>>
+type PayrollElem<'a> = PayrollElemContext -> PayrollElemResult<'a>
+    and PayrollElemContext = ContractId * YearMonth
     and ContractId = | ContractId of int
     and YearMonth = | YearMonth of year:int * month:int
+    and PayrollElemResult<'a> = Effect<Result<'a, string>>
+
 
 module YearMonth = 
  let lastMonth (YearMonth (year, month)) = YearMonth (year, month-1)
@@ -36,18 +38,18 @@ module PayrollElemResult =
 
 module PayrollElem =
     let map (func: 'a -> 'b) (eff: PayrollElem<'a>) : PayrollElem<'b> = 
-        fun contractId yearMonth ->
-            eff contractId yearMonth |> PayrollElemResult.map func
+        fun ctx ->
+            eff ctx |> PayrollElemResult.map func
 
     let bind (func: 'a -> PayrollElem<'b>) (eff: PayrollElem<'a>): PayrollElem<'b> = 
-        fun contractId yearMonth ->
-            eff contractId yearMonth |> PayrollElemResult.bind (fun a -> func a contractId yearMonth)
+        fun ctx ->
+            eff ctx |> PayrollElemResult.bind (fun a -> func a ctx)
 
     let apply (func:PayrollElem<'a->'b>) (eff:PayrollElem<'a>) = 
         bind (fun a -> func |> map (fun fn -> fn a)) eff
 
     let return' (x:'a): PayrollElem<'a> =
-        fun _contractId _yearMonth -> PayrollElemResult.return' x
+        fun _ctx -> PayrollElemResult.return' x
 
     let composeK f g x = bind g (f x)
     
@@ -94,9 +96,9 @@ module List =
     let sequencePayrollElemResult list = traversePayrollElemResult id list
 
 
-let eval (elem:PayrollElem<'a>) contractId yearMonth = 
+let eval (elem:PayrollElem<'a>) ctx = 
     effect {
-        let! result =  elem contractId yearMonth
+        let! result =  elem ctx
         match result with
         | Ok a -> return sprintf "%A" a
         | Error err -> return sprintf "Eroare: %s" err
@@ -105,7 +107,6 @@ let eval (elem:PayrollElem<'a>) contractId yearMonth =
 module Payroll = 
     let constant = PayrollElem.return'
     
-
 
 
 

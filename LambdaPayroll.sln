@@ -3,7 +3,21 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29806.167
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "LambdaPayroll", "LambdaPayroll\LambdaPayroll.fsproj", "{2AA2859F-D600-4AD4-9BD1-C77B9FF68D5B}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "LambdaPayroll", "LambdaPayroll\LambdaPayroll.fsproj", "{2AA2859F-D600-4AD4-9BD1-C77B9FF68D5B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{75751D3B-A96B-485C-8100-86F56F2902F5}"
+	ProjectSection(SolutionItems) = preProject
+		dependencies.props = dependencies.props
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "LambdaPayroll.Migrations", "LambdaPayroll.Migrations\LambdaPayroll.Migrations.fsproj", "{344DC525-5E3E-4B8B-BB5E-5FA846414014}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "LambdaPayroll.Api", "LambdaPayroll.Api\LambdaPayroll.Api.fsproj", "{F4F61DCD-DF5A-4461-96F8-6553850F7D79}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "LambdaPayroll.Tests", "LambdaPayroll.Tests\LambdaPayroll.Tests.fsproj", "{A25E2886-82DD-40E2-824D-40417A8EBF9F}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "LambdaPayroll.Worker", "LambdaPayroll.Worker\LambdaPayroll.Worker.fsproj", "{FDBDDFF8-2681-4D81-BFA0-5F330E002B4C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +29,22 @@ Global
 		{2AA2859F-D600-4AD4-9BD1-C77B9FF68D5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2AA2859F-D600-4AD4-9BD1-C77B9FF68D5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2AA2859F-D600-4AD4-9BD1-C77B9FF68D5B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{344DC525-5E3E-4B8B-BB5E-5FA846414014}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{344DC525-5E3E-4B8B-BB5E-5FA846414014}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{344DC525-5E3E-4B8B-BB5E-5FA846414014}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{344DC525-5E3E-4B8B-BB5E-5FA846414014}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4F61DCD-DF5A-4461-96F8-6553850F7D79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4F61DCD-DF5A-4461-96F8-6553850F7D79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4F61DCD-DF5A-4461-96F8-6553850F7D79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4F61DCD-DF5A-4461-96F8-6553850F7D79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A25E2886-82DD-40E2-824D-40417A8EBF9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A25E2886-82DD-40E2-824D-40417A8EBF9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A25E2886-82DD-40E2-824D-40417A8EBF9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A25E2886-82DD-40E2-824D-40417A8EBF9F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FDBDDFF8-2681-4D81-BFA0-5F330E002B4C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FDBDDFF8-2681-4D81-BFA0-5F330E002B4C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FDBDDFF8-2681-4D81-BFA0-5F330E002B4C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FDBDDFF8-2681-4D81-BFA0-5F330E002B4C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

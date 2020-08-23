@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UserSecretsId>6cab40d7-1c30-4e96-8fc6-c6c6477176ce</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="HostedServices\CompileDefinitions.fs" />
+    <Compile Include="HandlerUtils.fs" />
+    <Compile Include="Handlers\Compilation.fs" />
+    <Compile Include="Handlers\ElemDefinitions.fs" />
+    <Compile Include="Handlers\Evaluation.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Giraffe" Version="4.0.1" />
+    <PackageReference Include="NBB.Correlation" Version="$(NBBPackagesVersion)" />
+    <PackageReference Include="NBB.Messaging.Nats" Version="$(NBBPackagesVersion)" />
+    <PackageReference Include="NBB.Correlation.AspNet" Version="$(NBBPackagesVersion)" />
+    <PackageReference Include="NBB.Core.DependencyInjection" Version="$(NBBPackagesVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LambdaPayroll\LambdaPayroll.fsproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <HomeDir>$(UserProfile)</HomeDir>
+    <HomeDir Condition="'$(HomeDir)' == ''">$(Home)</HomeDir>
+  </PropertyGroup>
+  
+  <Target Name="CopyTypeProviders" AfterTargets="AfterBuild">
+     <Copy SourceFiles="$(HomeDir)\.nuget\packages\fsharp.data.sqlclient\2.0.6\lib\typeproviders\fsharp41\netstandard2.0\FSharp.Data.SqlClient.DesignTime.dll" DestinationFolder="$(OutputPath)" />
+  </Target>
+</Project>
