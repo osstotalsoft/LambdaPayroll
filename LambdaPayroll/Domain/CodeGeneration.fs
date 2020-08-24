@@ -7,6 +7,7 @@ open Core
 module codeGenerationService =
     open System
     open NBB.Core.FSharp.Data
+    open NBB.Core.FSharp.Data.State
 
     module FormulaParser =
         open System.Text.RegularExpressions
@@ -32,6 +33,8 @@ module codeGenerationService =
         sprintf "let %s = %s" code (elemExpression elemDefinition)
 
     let private concat = String.concat Environment.NewLine
+    let private append item list = list @ [item]
+    let private prepend item list = [item] @ list
 
     let private header = "
 module Generated
@@ -44,34 +47,44 @@ open NBB.Core.Effects.FSharp
 "
 
     let generateSourceCode (store: ElemDefinitionStore) =
-        let rec eval (defs: Set<ElemCode>) (elem: ElemCode): Result<Set<ElemCode> * string, string> =
-            ElemDefinitionStore.findElemDefinition store elem
-            |> Result.bind (fun elemDefinition ->
-
-                if defs.Contains(elem) then
-                    Ok(defs, String.Empty)
-                else
-                    let crtLine = elemstatement elemDefinition
+        let rec buildLinesMultipleElems(elems: ElemCode list) =
+            state {
+                let! results = elems |> List.traverseState buildLinesSingleElem
+                return results |> List.sequenceResult |> Result.map List.concat
+            }
+        and buildLinesSingleElem (elem: ElemCode): State<Set<ElemCode>, Result<string list, string>> =
+            let buildLines elemDefinition =
+                let crtLine = elemstatement elemDefinition
+                state {
                     match elemDefinition with
                     | { Type = Formula { Formula = formula } } ->
-                        formula 
-                        |> FormulaParser.getDeps
-                        |> List.map (ElemCode)
-                        |> List.fold folder (Ok(defs, String.Empty))
-                        |> Result.map (fun (defs1, lines1) -> (defs1.Add elem, [ lines1; crtLine ] |> concat))
-                    | _ -> Ok(defs.Add elem, crtLine))
+                        let deps = formula |> FormulaParser.getDeps |> List.map ElemCode
+                        let! depsLines = deps |> buildLinesMultipleElems
 
-        and folder =
-            fun (acc: Result<Set<ElemCode> * string, string>) code ->
-                acc
-                |> Result.bind (fun (defs, lines) ->
-                    eval defs code
-                    |> Result.map (fun (defs1, lines1) -> (Set.union defs defs1, [ lines; lines1 ] |> concat)))
+                        return depsLines |> Result.map (append crtLine)
+                    | _ -> return Ok([crtLine])
+                }
+            state {
+                let! defs = State.get ()
+                if defs.Contains(elem) then
+                    return Ok(List.empty)
+                else
+                    let! elemResult = 
+                        ElemDefinitionStore.findElemDefinition store elem
+                        |> Result.traverseState buildLines
+                        
+                    do! State.modify(fun state -> state.Add elem)
+                    return elemResult |> Result.join
+            }
+          
+        let buildProgramLines  = 
+            state {
+                let! result = ElemDefinitionStore.getAllCodes store |> buildLinesMultipleElems
+                return result |> Result.map (prepend header)
+            }
 
-
-        ElemDefinitionStore.getAllCodes store
-        |> List.fold folder (Ok(Set.empty, header))
-        |> Result.map snd
+        let lines, _ = State.run buildProgramLines Set.empty
+        lines |> Result.map concat
 
 module GeneratedCodeCache =
     type GetGeneratedCodeSideEffect() =
