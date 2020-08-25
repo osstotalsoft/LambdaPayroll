@@ -88,7 +88,7 @@ module ElemDefinitionStore =
 
     let findElemDefinition ({ElemDefinitions=elemDefinitions}) elemCode = 
         match (elemDefinitions.TryFind elemCode) with
-            | None -> "could not find definition" |> Result.Error
+            | None -> sprintf "could not find definition %A" elemCode |> Result.Error
             | Some elemDefinition -> Result.Ok elemDefinition
 
     let getAllCodes (store: ElemDefinitionStore) =

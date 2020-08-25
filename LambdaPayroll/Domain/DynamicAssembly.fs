@@ -36,7 +36,7 @@ module DynamicAssembly =
             |> Array.tryFind (fun f -> f.Name = elemCode)
             |> function
             | Some prop -> prop.GetValue(null) |> cast
-            | None -> Error "Function `run` not found"
+            | None -> Error (sprintf "Property '%s' not found" elemCode)
         | None -> Error "Module `Generated` not found"
 
 module DynamicAssemblyService =

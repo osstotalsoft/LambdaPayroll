@@ -11,7 +11,7 @@ module codeGenerationService =
 
     module FormulaParser =
         open System.Text.RegularExpressions
-        let private pattern =  @"@([^\s]+)"
+        let private pattern =  @"@([a-zA-Z0-9_]+)"
         let private evaluator (m : Match) = m.Groups.[1].Value
 
         let getDeps (formulaWithTokens) =
@@ -30,7 +30,17 @@ module codeGenerationService =
 
     let private elemstatement (elemDefinition: ElemDefinition) =
         let { Code = ElemCode (code) } = elemDefinition
-        sprintf "let %s = %s" code (elemExpression elemDefinition)
+        let expression = elemExpression elemDefinition
+        let tab = "    "
+        let indent (str: string) = 
+            str.Split([|'\r'; '\n'|], StringSplitOptions.RemoveEmptyEntries)
+            |> Array.map (sprintf "%s%s" tab)
+            |> String.concat Environment.NewLine
+
+        if expression.Contains(Environment.NewLine) || (String.length expression) > 50 then
+            sprintf "let %s = \n%s\n" code (indent expression)
+        else
+            sprintf "let %s = %s" code expression
 
     let private concat = String.concat Environment.NewLine
     let private append item list = list @ [item]

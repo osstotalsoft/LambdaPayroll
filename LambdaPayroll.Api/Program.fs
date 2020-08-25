@@ -70,7 +70,7 @@ module App =
         services.AddEffects() |> ignore
         services.AddMessagingEffects() |> ignore
         services
-            //.AddSideEffectHandler(FormulaParser.parse)
+            .AddSideEffectHandler(Common.handleException)
             .AddSideEffectHandler(DynamicAssemblyCache.get)
             .AddSideEffectHandler(DynamicAssemblyCache.set)
             .AddSideEffectHandler(GeneratedCodeCache.get)

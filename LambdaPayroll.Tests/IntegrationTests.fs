@@ -62,7 +62,7 @@ let ``It shoud evaluate formula with params (integration)`` () =
                 GO
                 SET IDENTITY_INSERT [dbo].[DbElemDefinition] ON 
                 GO
-                INSERT [dbo].[DbElemDefinition] ([DbElemDefinitionId], [TableName], [ColumnName], [ElemDefinitionId]) VALUES (1, N'Salarii   ', N'Brut      ', 1)
+                INSERT [dbo].[DbElemDefinition] ([DbElemDefinitionId], [TableName], [ColumnName], [ElemDefinitionId]) VALUES (1, N'Salarii   ', N'SalariuBrut      ', 1)
                 GO
                 SET IDENTITY_INSERT [dbo].[DbElemDefinition] OFF
                 GO
@@ -100,11 +100,11 @@ let ``It shoud evaluate formula with params (integration)`` () =
             	    [ContractId] [int] NOT NULL,
             	    [Month] [tinyint] NOT NULL,
             	    [Year] [smallint] NOT NULL,
-            	    [Brut] [decimal](18, 0) NOT NULL
+            	    [SalariuBrut] [decimal](18, 0) NOT NULL
                 ) ON [PRIMARY]
                 GO")
             .WithScript("PopulateData", 
-                "INSERT [dbo].[Salarii] ([ContractId], [Month], [Year], [Brut]) VALUES (1, 1, 2009, CAST(1000 AS Decimal(18, 0)))
+                "INSERT [dbo].[Salarii] ([ContractId], [Month], [Year], [SalariuBrut]) VALUES (1, 1, 2009, CAST(1000 AS Decimal(18, 0)))
                 GO")
             .LogToConsole()
             .Build()

@@ -5,8 +5,8 @@ SET QUOTED_IDENTIFIER ON
 GO 
 CREATE TABLE [dbo].[DbElemDefinition](
 	[DbElemDefinitionId] [int] IDENTITY(1,1) NOT NULL,
-	[TableName] [nchar](10) NOT NULL,  
-	[ColumnName] [nchar](10) NOT NULL,
+	[TableName] [nvarchar](50) NOT NULL,  
+	[ColumnName] [nvarchar](50) NOT NULL,
 	[ElemDefinitionId] [int] NOT NULL,
  CONSTRAINT [PK_DbElemDefinition] PRIMARY KEY CLUSTERED  
 (
