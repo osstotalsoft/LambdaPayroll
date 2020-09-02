@@ -40,6 +40,10 @@
     <ProjectReference Include="..\LambdaPayroll\LambdaPayroll.fsproj" />
   </ItemGroup>
 
+    <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="4.7.1" />
+  </ItemGroup>
+
   <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
   
 </Project>

@@ -18,7 +18,6 @@
 
   <ItemGroup>
     <PackageReference Include="dbup-sqlserver" Version="4.3.1" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="$(MicrosoftExtensionsPackagesVersion)" />
     <PackageReference Include="FSharp.Interop.Dynamic" Version="5.0.1.268" />
     <PackageReference Include="FsUnit.xUnit" Version="3.8.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.1" />
@@ -37,17 +36,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="4.7.1" />
+  </ItemGroup>
+    
+  <ItemGroup>
     <ProjectReference Include="..\LambdaPayroll.Migrations\LambdaPayroll.Migrations.fsproj" />
     <ProjectReference Include="..\LambdaPayroll\LambdaPayroll.fsproj" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <HomeDir>$(UserProfile)</HomeDir>
-    <HomeDir Condition="'$(HomeDir)' == ''">$(Home)</HomeDir>
-  </PropertyGroup>
-  
-  <Target Name="CopyTypeProviders" AfterTargets="AfterBuild">
-     <Copy SourceFiles="$(HomeDir)\.nuget\packages\fsharp.data.sqlclient\2.0.6\lib\typeproviders\fsharp41\netstandard2.0\FSharp.Data.SqlClient.DesignTime.dll" DestinationFolder="$(OutputPath)" />
-  </Target>
   
 </Project>

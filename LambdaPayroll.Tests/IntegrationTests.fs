@@ -27,7 +27,7 @@ let payrollConnString = configuration.GetConnectionString "LambdaPayroll"
 let hcmConnectionString = configuration.GetConnectionString "Hcm"
 
 
-let services = new ServiceCollection();
+let services = ServiceCollection();
 services.AddEffects() |> ignore
 services
     .AddSideEffectHandler(ElemDefinitionStoreRepo.loadCurrent payrollConnString)

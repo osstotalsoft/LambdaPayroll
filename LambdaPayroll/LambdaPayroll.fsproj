@@ -6,7 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="App.config" />
     <Compile Include="Domain\Core.fs" />
     <Compile Include="Domain\ElemCache.fs" />
     <Compile Include="Domain\DefaultPayrollElems.fs" />
@@ -35,38 +34,15 @@
 
   <ItemGroup>
     <PackageReference Include="FSharp.Compiler.Service" Version="36.0.3" />
-    <PackageReference Include="FSharp.Configuration" Version="2.0.0-alpha2" />
-    <PackageReference Include="FSharp.Data.SqlClient" Version="2.0.6" />
     <PackageReference Include="NBB.Application.DataContracts" Version="$(NBBPackagesVersion)" />
     <PackageReference Include="NBB.Core.Effects.FSharp" Version="$(NBBPackagesVersion)" />
     <PackageReference Include="NBB.Core.Evented.FSharp" Version="$(NBBPackagesVersion)" />
     <PackageReference Include="NBB.Messaging.Effects" Version="$(NBBPackagesVersion)" />
     <PackageReference Include="NBB.Application.Mediator.FSharp" Version="$(NBBPackagesVersion)" />
-
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Update="FSharp.Core" Version="4.7.1" />
   </ItemGroup>
-  
-  <ItemGroup>
-    <SqlFiles Include="..\LambdaPayroll.Migrations\**\*.sql" />
-    <UpToDateCheckInput Include="@(SqlFiles)" />
-  </ItemGroup>
-  
-  <Target Name="TouchProjectFileIfSqlOrDbChanged" BeforeTargets="BeforeBuild" Inputs="@(SqlFiles)" Outputs="$(MSBuildProjectFile)">
-    <Message Text="SQL or DB files changed. Changing project file modification time to force recompilation." Importance="High" />
-    <Exec Command="PowerShell -NoProfile -ExecutionPolicy Bypass -Command &quot;(dir $(MSBuildProjectFile)).LastWriteTime = Get-Date&quot;" />
-  </Target>
-  
-  <Target Name="BuildDb" BeforeTargets="BeforeBuild">
-    <XmlPeek XmlInputPath="App.config" Query="configuration/connectionStrings/add[@name='LambdaPayroll']/@connectionString">
-        <Output TaskParameter="Result" ItemName="connectionString" />
-    </XmlPeek>
-    <Message Text="------ Building dev database: Connection string @(connectionString). ------" Importance="high" />
-    <Exec Command="dotnet run -p ..\LambdaPayroll.Migrations\LambdaPayroll.Migrations.fsproj -- --drop &quot;@(connectionString)&quot;" />
-  </Target>
-
-
-
 </Project>

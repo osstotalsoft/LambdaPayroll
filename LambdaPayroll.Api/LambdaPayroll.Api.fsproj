@@ -24,15 +24,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\LambdaPayroll\LambdaPayroll.fsproj" />
+    <PackageReference Update="FSharp.Core" Version="4.7.1" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <HomeDir>$(UserProfile)</HomeDir>
-    <HomeDir Condition="'$(HomeDir)' == ''">$(Home)</HomeDir>
-  </PropertyGroup>
-  
-  <Target Name="CopyTypeProviders" AfterTargets="AfterBuild">
-     <Copy SourceFiles="$(HomeDir)\.nuget\packages\fsharp.data.sqlclient\2.0.6\lib\typeproviders\fsharp41\netstandard2.0\FSharp.Data.SqlClient.DesignTime.dll" DestinationFolder="$(OutputPath)" />
-  </Target>
+  <ItemGroup>
+    <ProjectReference Include="..\LambdaPayroll\LambdaPayroll.fsproj" />
+  </ItemGroup>
 </Project>
