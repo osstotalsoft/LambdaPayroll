@@ -16,10 +16,12 @@ open NBB.Resiliency
 open LambdaPayroll
 open LambdaPayroll.PublishedLanguage
 open LambdaPayroll.Infra
-open CommandHandler
 open LambdaPayroll.Infra.DataAccess
 open NBB.Core.Abstractions
 open NBB.Core.Effects.FSharp
+open NBB.Application.Mediator.FSharp
+open LambdaPayroll.Application
+open Application
 
 [<EntryPoint>]
 let main argv =
@@ -41,14 +43,9 @@ let main argv =
         let payrollConnString = context.Configuration.GetConnectionString "LambdaPayroll"
 
         let applicationPipeline = 
-            let commandHandler = createCommandHandler [
-                Application.AddDbElemDefinition.handler |> toCommandHandlerReg;
-                Application.AddFormulaElemDefinition.handler |> toCommandHandlerReg
-            ]
-
             fun message ->
                 match box message with
-                | :? ICommand as command -> commandHandler command 
+                | :? ICommand as command -> WriteApplication.sendCommand command 
                 | _ -> failwith "Invalid message"
 
         services.AddEffects() |> ignore
@@ -56,6 +53,7 @@ let main argv =
         services
             .AddSideEffectHandler(ElemDefinitionStoreRepo.loadCurrent payrollConnString)
             .AddSideEffectHandler(ElemDefinitionStoreRepo.save payrollConnString)
+            .AddSideEffectHandler(DynamicAssembly.DynamicAssembly.compile)
             .AddSideEffectHandler(Common.handleException)
             |> ignore;
 

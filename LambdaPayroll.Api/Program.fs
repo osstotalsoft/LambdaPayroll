@@ -78,6 +78,9 @@ module App =
             .AddSideEffectHandler(DynamicAssembly.compile)
             .AddSideEffectHandler(ElemDefinitionStoreRepo.loadCurrent payrollConnString)
             .AddSideEffectHandler(DbElemValue.loadValue hcmConnectionString)
+
+            // To be used from the Worker process
+            .AddSideEffectHandler(ElemDefinitionStoreRepo.save payrollConnString)
             |> ignore;
 
         services.AddNatsMessaging() |> ignore

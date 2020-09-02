@@ -15,8 +15,11 @@ module Compile =
                 | Ok sourceCode -> 
                     do! GeneratedCodeCache.set sourceCode
 
-                    let! assembly = DynamicAssemblyService.compile sourceCode
-                    do! DynamicAssemblyCache.set assembly
+                    match! DynamicAssemblyService.compile sourceCode with
+                    | Ok assembly ->
+                        do! DynamicAssemblyCache.set assembly
+                    | Error errors ->
+                        do! Exception.throw (errors |> Seq.map (fun e -> e.Message) |> String.concat Environment.NewLine)
                 | Error e -> 
                     do! Exception.throw e
            }

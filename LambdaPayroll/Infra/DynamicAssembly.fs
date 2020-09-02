@@ -22,8 +22,9 @@ module DynamicAssembly =
         open Core
         open System.IO
         open FSharp.Compiler.SourceCodeServices
+        open DynamicAssemblyService
 
-        let compile (DynamicAssemblyService.CompileDynamicAssemblySideEffect sourceCode) : DynamicAssembly =
+        let compile (CompileDynamicAssemblySideEffect sourceCode) : Result<DynamicAssembly, ErrorInfo list> =
             let fn = Path.GetTempFileName()
             let fn2 = Path.ChangeExtension(fn, ".fs")
             File.WriteAllText(fn2, sourceCode)
@@ -45,7 +46,10 @@ module DynamicAssembly =
                 |> Async.RunSynchronously
 
             if exitCode <> 0 then
-                failwith (errors |> Seq.map (fun e -> e.Message) |> String.concat Environment.NewLine)
+                errors 
+                    |> Seq.map (fun e -> {Message = e.Message; Severity = e.Severity.ToString(); Range = {StartLine = e.Start.Line; StartColumn = e.Start.Column; EndLine = e.End.Line; EndColumn = e.End.Column};}) 
+                    |> Seq.toList
+                    |> Error
             else
                 let assembly = dynAssembly.Value
-                DynamicAssembly assembly
+                Ok (DynamicAssembly assembly)

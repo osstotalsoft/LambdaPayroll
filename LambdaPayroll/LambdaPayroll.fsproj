@@ -23,6 +23,7 @@
     <Compile Include="Application\ElemDefinition.fs" />
     <Compile Include="Application\Evaluation.fs" />
     <Compile Include="Application\Compilation.fs" />
+    <Compile Include="Application\Application.fs" />
     <Compile Include="Infra\CommandHandler.fs" />
     <Compile Include="Infra\Common.fs" />
     <Compile Include="Infra\DataAccess.fs" />
@@ -40,6 +41,7 @@
     <PackageReference Include="NBB.Core.Effects.FSharp" Version="$(NBBPackagesVersion)" />
     <PackageReference Include="NBB.Core.Evented.FSharp" Version="$(NBBPackagesVersion)" />
     <PackageReference Include="NBB.Messaging.Effects" Version="$(NBBPackagesVersion)" />
+    <PackageReference Include="NBB.Application.Mediator.FSharp" Version="$(NBBPackagesVersion)" />
 
   </ItemGroup>
 

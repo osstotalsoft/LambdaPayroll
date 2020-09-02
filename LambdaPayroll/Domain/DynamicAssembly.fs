@@ -40,9 +40,12 @@ module DynamicAssembly =
         | None -> Error "Module `Generated` not found"
 
 module DynamicAssemblyService =
+    type Range = {StartLine: int; EndLine: int; StartColumn: int; EndColumn: int}
+    type ErrorInfo = {Message: string; Severity: string; Range: Range}
+
     type CompileDynamicAssemblySideEffect =
         | CompileDynamicAssemblySideEffect of code: string
-        interface ISideEffect<DynamicAssembly>
+        interface ISideEffect<Result<DynamicAssembly, ErrorInfo list>>
 
     let compile sourceCode =
         Effect.Of(CompileDynamicAssemblySideEffect sourceCode)

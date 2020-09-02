@@ -29,6 +29,7 @@
     <PackageReference Include="NBB.Messaging.Host" Version="$(NBBPackagesVersion)" />
     <PackageReference Include="NBB.Messaging.Nats" Version="$(NBBPackagesVersion)" />
     <PackageReference Include="NBB.Messaging.Effects" Version="$(NBBPackagesVersion)" />
+    <PackageReference Include="NBB.Application.Mediator.FSharp" Version="$(NBBPackagesVersion)" />
     <PackageReference Include="Serilog" Version="2.9.0" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
@@ -38,5 +39,7 @@
   <ItemGroup>
     <ProjectReference Include="..\LambdaPayroll\LambdaPayroll.fsproj" />
   </ItemGroup>
+
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
   
 </Project>
