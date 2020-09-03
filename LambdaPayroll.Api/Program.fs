@@ -12,12 +12,19 @@ open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Configuration
 open NBB.Messaging.Effects
+open NBB.Messaging.Host
 open NBB.Messaging.Nats
+open NBB.Messaging.Host.MessagingPipeline;
+open NBB.Resiliency
 open NBB.Core.Effects
+open NBB.Core.Abstractions
 open NBB.Correlation.AspNet
 open LambdaPayroll.Infra
 open DynamicAssembly
 open LambdaPayroll.Infra.DataAccess
+open LambdaPayroll.Application
+open LambdaPayroll.PublishedLanguage
+
 
 // ---------------------------------
 // Web app
@@ -62,6 +69,7 @@ module App =
             .UseCorrelation()
             .UseGiraffe(webApp)
 
+    open NBB.Core.Effects.FSharp
     let configureServices (context: WebHostBuilderContext) (services : IServiceCollection) =
         let payrollConnString = context.Configuration.GetConnectionString "LambdaPayroll"
         let hcmConnectionString = context.Configuration.GetConnectionString "Hcm"
@@ -88,6 +96,30 @@ module App =
             .AddGiraffe() 
             .AddSingleton<IJsonSerializer>(
                 NewtonsoftJsonSerializer(NewtonsoftJsonSerializer.DefaultSettings))
+            |> ignore
+
+        // To be used from the Worker process
+        
+        let applicationPipeline = 
+            fun message ->
+                match box message with
+                | :? IEvent as event -> WriteApplication.publishEvent event
+                | _ -> failwith "Invalid message"
+
+        
+        services.AddResiliency() |> ignore
+        services
+            .AddMessagingHost()
+                .AddSubscriberServices(fun config -> config.AddTypes( typeof<ElemDefinitionAdded >) |> ignore)
+                .WithDefaultOptions()
+                .UsePipeline(fun pipelineBuilder -> 
+                    pipelineBuilder
+                        .UseCorrelationMiddleware()
+                        .UseExceptionHandlingMiddleware()
+                        .UseDefaultResiliencyMiddleware()
+                        .UseEffectMiddleware(fun m -> m |> applicationPipeline |> Effect.unWrap |> EffectExtensions.ToUnit)
+                        |> ignore
+                )
             |> ignore
 
 

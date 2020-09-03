@@ -5,15 +5,15 @@ open NBB.Core.Effects.FSharp
 
 open System
 
-module Application =
+module Middleware = 
 
-    let logRequest =
+    let log =
         fun next req ->
             effect {
                 let reqType = req.GetType().FullName
-                printfn "Precessing request of type %s" reqType
+                printfn "Precessing %s" reqType
                 let! result = next req
-                printfn "Precessed request of type %s" reqType
+                printfn "Precessed %s" reqType
                 return result
             }
 
@@ -24,34 +24,48 @@ module Application =
                 return Some()
             }
 
-    module ReadApplication =
-        open LambdaPayroll.Application.Evaluation
-        open RequestMiddleware
-        open QueryHandler
+module ReadApplication =
+    open LambdaPayroll.Application.Evaluation
+    open RequestMiddleware
+    open QueryHandler
+    open Middleware
 
-        let private queryPipeline =
-            logRequest
-            << handlers [ EvaluateSingleCode.handle |> upCast
-                          EvaluateMultipleCodes.handle |> upCast
-                          Compilation.GetGeneratedCode.handle |> upCast ]
+    let private queryPipeline =
+        log
+        << handlers [ EvaluateSingleCode.handle |> upCast
+                      EvaluateMultipleCodes.handle |> upCast
+                      Compilation.GetGeneratedCode.handle |> upCast ]
 
-        let private commandPipeline = logRequest << lift publishMessage
+    let private commandPipeline = log << lift publishMessage
 
-        let sendQuery (query: 'TQuery) = 
-            QueryMidleware.run queryPipeline query
+    let sendQuery (query: 'TQuery) = 
+        QueryMidleware.run queryPipeline query
 
-        let sendCommand (cmd: 'TCommand) =
-            CommandMiddleware.run commandPipeline cmd
+    let sendCommand (cmd: 'TCommand) =
+        CommandMiddleware.run commandPipeline cmd
 
 
-    module WriteApplication =
-        open RequestMiddleware
-        open CommandHandler
+module WriteApplication =
+    open RequestMiddleware
+    open CommandHandler
+    open LambdaPayroll.Application.Compilation
+    open Middleware
 
-        let private commandPipeline =
-            logRequest
-            << handlers [ AddDbElemDefinition.handle |> upCast
-                          lift AddFormulaElemDefinition.validate AddFormulaElemDefinition.handle |> upCast ]
+    let private commandPipeline =
+        log
+        << handlers [ AddDbElemDefinition.handle |> upCast
+                      lift AddFormulaElemDefinition.validate AddFormulaElemDefinition.handle |> upCast 
+                      Compile.handle |> upCast]
 
-        let sendCommand (cmd: 'TCommand) =
-            CommandMiddleware.run commandPipeline cmd
+    open EventMiddleware
+    open EventHandler
+
+    let private eventPipeline: EventMiddleware =
+        log
+        << handlers [
+            ElemDefinitionAdded.handle |> upCast 
+        ]
+
+
+    let sendCommand (cmd: 'TCommand) = CommandMiddleware.run commandPipeline cmd 
+    let publishEvent (ev: 'TEvent) = EventMiddleware.run eventPipeline ev 

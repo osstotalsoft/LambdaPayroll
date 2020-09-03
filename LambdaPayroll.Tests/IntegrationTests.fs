@@ -12,7 +12,7 @@ open LambdaPayroll.Infra
 open DataAccess
 open LambdaPayroll.Application.Evaluation
 open LambdaPayroll.Application.Compilation
-open LambdaPayroll.Application.Application
+open LambdaPayroll.Application
 open LambdaPayroll.Migrations
 open Microsoft.Extensions.DependencyInjection
 open LambdaPayroll.Infra.DynamicAssembly
@@ -119,7 +119,7 @@ let ``It shoud evaluate formula with params (integration)`` () =
     use container = services.BuildServiceProvider();
     let interpreter = container.GetRequiredService<IInterpreter>()
 
-    let compileEff = Compile.handler ()
+    let compileEff = WriteApplication.sendCommand <| Compile.Command ()
     compileEff |> Effect.interpret interpreter |> Async.RunSynchronously |> ignore 
 
     let eff = ReadApplication.sendQuery query

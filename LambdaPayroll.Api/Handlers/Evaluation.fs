@@ -4,7 +4,6 @@ open LambdaPayroll.Api
 open HandlerUtils
 open Giraffe
 open LambdaPayroll.Application
-open Application
 open LambdaPayroll.Application.Evaluation
 
 module Evaluation =

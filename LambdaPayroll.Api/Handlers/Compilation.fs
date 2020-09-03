@@ -5,7 +5,6 @@ open HandlerUtils
 open Giraffe
 open LambdaPayroll.Application
 open LambdaPayroll.Application.Compilation
-open Application
 
 module Compilation =
     let handler : HttpHandler = 

@@ -66,3 +66,9 @@ module AddFormulaElemDefinition =
 
             return Some()
         }  
+
+module ElemDefinitionAdded =
+    open LambdaPayroll.Application.Compilation
+
+    let handle (_: ElemDefinitionAdded) =
+        Compile.handle <| Compile.Command ()

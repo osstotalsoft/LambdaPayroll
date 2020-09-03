@@ -19,6 +19,7 @@
     <PackageReference Include="NBB.Correlation" Version="$(NBBPackagesVersion)" />
     <PackageReference Include="NBB.Application.Mediator.FSharp" Version="$(NBBPackagesVersion)" />
     <PackageReference Include="NBB.Messaging.Nats" Version="$(NBBPackagesVersion)" />
+    <PackageReference Include="NBB.Messaging.Host" Version="$(NBBPackagesVersion)" />
     <PackageReference Include="NBB.Correlation.AspNet" Version="$(NBBPackagesVersion)" />
     <PackageReference Include="NBB.Core.DependencyInjection" Version="$(NBBPackagesVersion)" />
   </ItemGroup>

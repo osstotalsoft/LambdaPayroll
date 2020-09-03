@@ -12,8 +12,8 @@ type CompileDefinitions (interpreter: IInterpreter) =
     interface IHostedService with
         member _.StartAsync (ct: CancellationToken) =
             task {
-                let effect = Compilation.Compile.handler ()
-                do! interpreter.Interpret(effect |> Effect.unWrap, ct)
+                let effect = WriteApplication.sendCommand <| Compilation.Compile.Command ()
+                do! interpreter.Interpret(effect |> Effect.unWrap |> EffectExtensions.ToUnit, ct)
             } :> Task
         member _.StopAsync (_ct: CancellationToken) = Task.CompletedTask
 

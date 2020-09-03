@@ -21,7 +21,6 @@ open NBB.Core.Abstractions
 open NBB.Core.Effects.FSharp
 open NBB.Application.Mediator.FSharp
 open LambdaPayroll.Application
-open Application
 
 [<EntryPoint>]
 let main argv =
@@ -46,6 +45,7 @@ let main argv =
             fun message ->
                 match box message with
                 | :? ICommand as command -> WriteApplication.sendCommand command 
+                | :? IEvent as event -> WriteApplication.publishEvent event
                 | _ -> failwith "Invalid message"
 
         services.AddEffects() |> ignore

@@ -7,9 +7,10 @@ open Core
 open LambdaPayroll.Domain
 
 module Compile =
-    type Command = unit
+    type Command () =
+        interface ICommand
 
-    let handler (_: Command) =
+    let handle (_: Command) =
            effect {
                 let! store = ElemDefinitionStoreRepo.loadCurrent
                 match codeGenerationService.generateSourceCode store with
@@ -23,6 +24,8 @@ module Compile =
                         do! Exception.throw (errors |> Seq.map (fun e -> e.Message) |> String.concat Environment.NewLine)
                 | Error e -> 
                     do! Exception.throw e
+
+                return Some ()
            }
 
 module GetGeneratedCode =

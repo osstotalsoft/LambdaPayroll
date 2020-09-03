@@ -5,7 +5,6 @@ open LambdaPayroll.PublishedLanguage
 open LambdaPayroll.Application
 open HandlerUtils
 open Giraffe
-open Application
 
 module ElemDefinitions =
    
