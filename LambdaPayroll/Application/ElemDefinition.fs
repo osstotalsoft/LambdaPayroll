@@ -8,7 +8,7 @@ open NBB.Core.Evented.FSharp
 open System
 
 module AddDbElemDefinition =
-    let handler (command: AddDbElemDefinition) =
+    let handle (command: AddDbElemDefinition) =
         effect {
             let! store = ElemDefinitionStoreRepo.loadCurrent
             let! eventedStore = 

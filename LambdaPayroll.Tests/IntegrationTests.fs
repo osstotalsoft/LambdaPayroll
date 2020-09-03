@@ -12,6 +12,7 @@ open LambdaPayroll.Infra
 open DataAccess
 open LambdaPayroll.Application.Evaluation
 open LambdaPayroll.Application.Compilation
+open LambdaPayroll.Application.Application
 open LambdaPayroll.Migrations
 open Microsoft.Extensions.DependencyInjection
 open LambdaPayroll.Infra.DynamicAssembly
@@ -121,11 +122,11 @@ let ``It shoud evaluate formula with params (integration)`` () =
     let compileEff = Compile.handler ()
     compileEff |> Effect.interpret interpreter |> Async.RunSynchronously |> ignore 
 
-    let eff = EvaluateMultipleCodes.handler query
+    let eff = ReadApplication.sendQuery query
 
     // Act
     let result = eff |> Effect.interpret interpreter |> Async.RunSynchronously
 
     // Assert  
-    result |> should equal (Ok ([900m :> obj; 100m :> obj]) : Result<obj list, string>)
+    result |> should equal (Some(Ok ([900m :> obj; 100m :> obj])) : Result<obj list, string> option)
     

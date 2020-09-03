@@ -36,9 +36,17 @@ module HandlerUtils =
         | Ok value -> json value
         | Error err -> setError err
 
+    let jsonResultOption = function
+        | Some result -> jsonResult result
+        | None -> setError "No result"
+
     let textResult = function
         | Ok value -> text value
         | Error err -> setError err
+    
+    let textResultOption = function
+        | Some result -> textResult result
+        | None -> setError "No result"
 
     let commandResult (command : IMetadataProvider<CommandMetadata>) : HttpHandler =
         fun (next : HttpFunc) (ctx : HttpContext) ->

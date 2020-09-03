@@ -2,6 +2,7 @@
 
 open System
 open NBB.Core.Effects.FSharp
+open NBB.Core.Abstractions
 open Core
 open LambdaPayroll.Domain
 
@@ -25,11 +26,14 @@ module Compile =
            }
 
 module GetGeneratedCode =
-    type Query = unit
+    
+    type Query () =
+        interface IQuery<Result<string, string>> with
+            member _.GetResponseType(): Type = typeof<Result<string, string>>
 
-    let handler (_: Query) =
+    let handle (_: Query) =
         effect {
             let! generatedCode = GeneratedCodeCache.get
 
-            return generatedCode
+            return Some generatedCode
         }

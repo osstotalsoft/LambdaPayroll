@@ -1,8 +1,11 @@
 ﻿namespace LambdaPayroll.Application.Evaluation
 
+open NBB.Core.Abstractions
 open NBB.Core.Effects.FSharp
 open Core
 open LambdaPayroll.Domain
+open System
+
 
 module EvaluateSingleCode =
     type Query =
@@ -10,8 +13,10 @@ module EvaluateSingleCode =
           ContractId: int
           Year: int
           Month: int }
+        interface IQuery<Result<obj, string>> with
+            member _.GetResponseType(): Type = typeof<Result<obj, string>>
 
-    let handler (query: Query) =
+    let handle (query: Query) =
         let code = ElemCode query.ElemCode
         let ctx = ContractId query.ContractId, YearMonth(query.Year, query.Month)
 
@@ -19,7 +24,7 @@ module EvaluateSingleCode =
             let! elemAssembly = DynamicAssemblyCache.get
             let! result = ElemEvaluationService.evaluateElem elemAssembly code ctx
 
-            return result
+            return Some result
         }
 
 module EvaluateMultipleCodes =
@@ -28,8 +33,11 @@ module EvaluateMultipleCodes =
           ContractId: int
           Year: int
           Month: int }
+        
+        interface IQuery<Result<obj list, string>> with
+            member _.GetResponseType(): Type = typeof<Result<obj list, string>>
 
-    let handler (query: Query) =
+    let handle (query: Query) =
         let codes = query.ElemCodes |> List.map ElemCode
         let ctx = ContractId query.ContractId, YearMonth(query.Year, query.Month)
 
@@ -37,5 +45,5 @@ module EvaluateMultipleCodes =
             let! elemAssembly = DynamicAssemblyCache.get
             let! result = ElemEvaluationService.evaluateElems elemAssembly codes ctx
 
-            return result
+            return Some result
         }

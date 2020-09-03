@@ -1,58 +1,57 @@
 ﻿namespace LambdaPayroll.Application
+
 open NBB.Application.Mediator.FSharp
 open NBB.Core.Effects.FSharp
 
 open System
 
-module Application = 
-    
+module Application =
+
     let logRequest =
         fun next req ->
-        effect {
-            let reqType = req.GetType().FullName
-            printfn "Precessing request of type %s" reqType
-            let! result = next req
-            printfn "Precessed request of type %s" reqType
-            return result
-        }
+            effect {
+                let reqType = req.GetType().FullName
+                printfn "Precessing request of type %s" reqType
+                let! result = next req
+                printfn "Precessed request of type %s" reqType
+                return result
+            }
 
-    let publishMessage = 
+    let publishMessage =
         fun req ->
             effect {
                 do! MessageBus.publish req
-                return Some ()
+                return Some()
             }
 
-    module ReadApplication = 
+    module ReadApplication =
         open LambdaPayroll.Application.Evaluation
         open RequestMiddleware
         open QueryHandler
 
-        let private queryPipeline = 
-            logRequest 
-            << handlers [
-                //EvaluateSingleCode.handler |> upCast;
-                //EvaluateMultipleCodes.handler |> upCast;
-                //Compilation.GetGeneratedCode.handler |> upCast
-            ]
-
-        let private commandPipeline = 
+        let private queryPipeline =
             logRequest
-            << lift publishMessage
+            << handlers [ EvaluateSingleCode.handle |> upCast
+                          EvaluateMultipleCodes.handle |> upCast
+                          Compilation.GetGeneratedCode.handle |> upCast ]
 
-        let sendQuery (query: 'TQuery) = QueryMidleware.run queryPipeline query
-        let sendCommand (cmd: 'TCommand) = CommandMiddleware.run commandPipeline cmd
+        let private commandPipeline = logRequest << lift publishMessage
+
+        let sendQuery (query: 'TQuery) = 
+            QueryMidleware.run queryPipeline query
+
+        let sendCommand (cmd: 'TCommand) =
+            CommandMiddleware.run commandPipeline cmd
 
 
-    module WriteApplication = 
+    module WriteApplication =
         open RequestMiddleware
         open CommandHandler
 
-        let private commandPipeline = 
+        let private commandPipeline =
             logRequest
-            << handlers [
-                AddDbElemDefinition.handler |> upCast;
-                lift AddFormulaElemDefinition.validate AddFormulaElemDefinition.handle |> upCast;
-            ]
+            << handlers [ AddDbElemDefinition.handle |> upCast
+                          lift AddFormulaElemDefinition.validate AddFormulaElemDefinition.handle |> upCast ]
 
-        let sendCommand (cmd: 'TCommand) = CommandMiddleware.run commandPipeline cmd
+        let sendCommand (cmd: 'TCommand) =
+            CommandMiddleware.run commandPipeline cmd
