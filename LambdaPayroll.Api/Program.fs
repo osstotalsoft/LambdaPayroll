@@ -21,6 +21,7 @@ open NBB.Core.Abstractions
 open NBB.Correlation.AspNet
 open LambdaPayroll.Infra
 open DynamicAssembly
+open InteractiveEvalSession
 open LambdaPayroll.Infra.DataAccess
 open LambdaPayroll.Application
 open LambdaPayroll.PublishedLanguage
@@ -86,6 +87,10 @@ module App =
             .AddSideEffectHandler(DynamicAssembly.compile)
             .AddSideEffectHandler(ElemDefinitionStoreRepo.loadCurrent payrollConnString)
             .AddSideEffectHandler(DbElemValue.loadValue hcmConnectionString)
+            .AddSideEffectHandler(InteractiveEvalSessionCache.get)
+            .AddSideEffectHandler(InteractiveEvalSessionCache.set)
+            .AddSideEffectHandler(InteractiveSession.createSession)
+            .AddSideEffectHandler(InteractiveSession.evaluateInteraction)
 
             // To be used from the Worker process
             .AddSideEffectHandler(ElemDefinitionStoreRepo.save payrollConnString)

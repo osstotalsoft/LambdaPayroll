@@ -15,6 +15,7 @@
     <Compile Include="Domain\Combinators.fs" />
     <Compile Include="Domain\CodeGeneration.fs" />
     <Compile Include="Domain\DynamicAssembly.fs" />
+    <Compile Include="Domain\InteractiveEvaluationSession.fs" />
     <Compile Include="Domain\ElemEvaluationService.fs" />
     <Compile Include="PublishedLanguage\Commands.fs" />
     <Compile Include="PublishedLanguage\Events.fs" />
@@ -28,6 +29,7 @@
     <Compile Include="Infra\DataAccess.fs" />
     <Compile Include="Infra\DynamicAssembly.fs" />
     <Compile Include="Infra\GeneratedCode.fs" />
+    <Compile Include="Infra\InteractiveSession.fs" />
     <Compile Include="SamplePayrollScheme.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

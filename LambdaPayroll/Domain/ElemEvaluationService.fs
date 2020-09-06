@@ -39,12 +39,18 @@ module ElemEvaluationService =
             |> List.traverseEffect (fun elemCode -> evaluateElem dynamicAssembly elemCode elemContext)
             |> Effect.map List.sequenceResult
 
-//type EvaluateElemsMultipleContexts = ElemDefinitionStore -> ElemCode list -> ComputationCtx list -> Effect<Result<obj list list, string>>
-//let evaluateElemsMultipleContexts : EvaluateElemsMultipleContexts =
-//    fun elemDefinitionStore elemCodes ctxs ->
-//        effect {
-//            let x = evaluateElems elemDefinitionStore elemCodes
-//            let! results = ctxs |> List.traverseEffect (ReaderEffect.run x)
-//            let result = results |> List.sequenceResult
-//            return result
-//        }
+module InteractiveEvaluationService = 
+    open LambdaPayroll.Domain.InteractiveEvalSessionService
+    type EvaluateExpression = InteractiveEvaluationSession -> string -> PayrollElemContext -> Effect<Result<obj, string>>
+    
+    let evaluateExpression : EvaluateExpression =
+        fun interactiveEvalSession expression elemContext ->
+            effect {
+                let! result = evalInteraction (interactiveEvalSession, expression)
+                return!
+                    result 
+                    |> Result.mapError ErrorInfo.format
+                    |> Result.bind DynamicAssembly.boxPayrollElemValue 
+                    |> Result.traverseEffect (fun payrollElem -> payrollElem elemContext)
+                    |> Effect.map Result.join
+            }

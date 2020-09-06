@@ -42,7 +42,7 @@ module AddFormulaElemDefinition =
                 | Ok _ ->
                     return None
                 | Error errors ->
-                    let error = errors |> Seq.map (fun e -> sprintf "%s: (%i,%i-%i,%i) %s" e.Severity e.Range.StartLine e.Range.StartColumn e.Range.EndLine e.Range.EndColumn  e.Message) |> String.concat Environment.NewLine
+                    let error = errors |> DynamicAssemblyService.ErrorInfo.format
                     return Some <| failwith (sprintf "Compilation errors: \n%s" error)
             | Error error -> 
                 return Some <| failwith error

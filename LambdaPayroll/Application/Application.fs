@@ -34,6 +34,7 @@ module ReadApplication =
         log
         << handlers [ EvaluateSingleCode.handle |> upCast
                       EvaluateMultipleCodes.handle |> upCast
+                      EvaluateExpression.handle |> upCast
                       Compilation.GetGeneratedCode.handle |> upCast ]
 
     let private commandPipeline = log << lift publishMessage

@@ -8,7 +8,7 @@ open Core
 type DynamicAssembly = DynamicAssembly of Assembly
 
 module DynamicAssembly =
-    let private cast (payrollElem: obj) =
+    let boxPayrollElemValue (payrollElem: obj) =
         match payrollElem with 
         | :? PayrollElem<decimal> as elem   -> elem |> PayrollElem.map box  |> Ok
         | :? PayrollElem<int> as elem       -> elem |> PayrollElem.map box  |> Ok
@@ -35,13 +35,18 @@ module DynamicAssembly =
             moduleType.GetProperties()
             |> Array.tryFind (fun f -> f.Name = elemCode)
             |> function
-            | Some prop -> prop.GetValue(null) |> cast
+            | Some prop -> prop.GetValue(null) |> boxPayrollElemValue
             | None -> Error (sprintf "Property '%s' not found" elemCode)
         | None -> Error "Module `Generated` not found"
 
 module DynamicAssemblyService =
     type Range = {StartLine: int; EndLine: int; StartColumn: int; EndColumn: int}
     type ErrorInfo = {Message: string; Severity: string; Range: Range}
+
+    module ErrorInfo =
+        let format : (ErrorInfo list -> string) = 
+            Seq.map (fun e -> sprintf "%s: (%i,%i-%i,%i) %s" e.Severity e.Range.StartLine e.Range.StartColumn e.Range.EndLine e.Range.EndColumn  e.Message) 
+            >> String.concat System.Environment.NewLine
 
     type CompileDynamicAssemblySideEffect =
         | CompileDynamicAssemblySideEffect of code: string
