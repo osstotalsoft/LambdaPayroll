@@ -87,6 +87,8 @@ module App =
             .AddSideEffectHandler(DynamicAssembly.compile)
             .AddSideEffectHandler(ElemDefinitionStoreRepo.loadCurrent payrollConnString)
             .AddSideEffectHandler(DbElemValue.loadValue hcmConnectionString)
+            .AddSideEffectHandler(DbElemValue.getAllEmployeeContracts hcmConnectionString)
+            .AddSideEffectHandler(DbElemValue.getOtherEmployeeContracts hcmConnectionString)
             .AddSideEffectHandler(InteractiveEvalSessionCache.get)
             .AddSideEffectHandler(InteractiveEvalSessionCache.set)
             .AddSideEffectHandler(InteractiveSession.createSession)

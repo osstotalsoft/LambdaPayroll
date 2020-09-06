@@ -21,7 +21,7 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[ElemDefinition](
 	[ElemDefinitionId] [int] IDENTITY(1,1) NOT NULL,
-	[Code] [nvarchar](50) NOT NULL,
+	[Code] [nvarchar](100) NOT NULL,
 	[DataType] [nvarchar](20) NOT NULL,
  CONSTRAINT [PK_ElemDefinition] PRIMARY KEY CLUSTERED 
 (

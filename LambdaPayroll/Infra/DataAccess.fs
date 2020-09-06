@@ -158,3 +158,33 @@ module DataAccess =
                       "@Year", box year ]
 
             Result.Ok result
+
+        let getOtherEmployeeContracts (connectionString: string)
+                      (HrAdmin.GetOtherEmployeeContractsSideEffect((ContractId contractId)))
+                      : ContractId list =
+            let read = SqlCommandHelper.read connectionString
+
+            let results =
+                read (fun r -> unbox r.[0] )
+                    "SELECT DISTINCT ContractId FROM Salarii 
+                        WHERE PersonId = (SELECT TOP 1 PersonId from Salarii WHERE ContractId = @ContractId)
+                        AND ContractId != @ContractId"
+                    ["@ContractId", box contractId]
+
+            results
+            |> List.map ContractId
+
+    
+        let getAllEmployeeContracts (connectionString: string)
+                      (HrAdmin.GetAllEmployeeContractsSideEffect((ContractId contractId)))
+                      : ContractId list =
+            let read = SqlCommandHelper.read connectionString
+
+            let results =
+                read (fun r -> unbox r.[0] )
+                    "SELECT DISTINCT ContractId FROM Salarii 
+                        WHERE PersonId = (SELECT TOP 1 PersonId from Salarii WHERE ContractId = @ContractId)"
+                    ["@ContractId", box contractId]
+
+            results
+            |> List.map ContractId
