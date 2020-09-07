@@ -53,7 +53,7 @@ module EvaluateMultipleCodes =
         }
 
 module EvaluateExpression = 
-    open LambdaPayroll.Domain.codeGenerationService
+    open LambdaPayroll.Domain.CodeGenerationService
     type Query =
         { Expression: string
           ContractId: int

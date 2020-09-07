@@ -4,7 +4,7 @@ open NBB.Core.Effects
 open NBB.Core.Effects.FSharp
 open Core
 
-module codeGenerationService =
+module CodeGenerationService =
     open System
     open NBB.Core.FSharp.Data
     open NBB.Core.FSharp.Data.State

@@ -13,7 +13,7 @@ module Compile =
     let handle (_: Command) =
            effect {
                 let! store = ElemDefinitionStoreRepo.loadCurrent
-                match codeGenerationService.generateSourceCode store with
+                match CodeGenerationService.generateSourceCode store with
                 | Ok sourceCode -> 
                     do! GeneratedCodeCache.set sourceCode
 

@@ -36,7 +36,7 @@ module AddFormulaElemDefinition =
             let! store = ElemDefinitionStoreRepo.loadCurrent
             let store' = {store with ElemDefinitions = store.ElemDefinitions.Add (elemDef.Code, elemDef)}
 
-            match codeGenerationService.generateSourceCode (store') with
+            match CodeGenerationService.generateSourceCode (store') with
             | Ok sourceCode -> 
                 match! DynamicAssemblyService.compile sourceCode with
                 | Ok _ ->
@@ -54,7 +54,7 @@ module AddFormulaElemDefinition =
             let! eventedStore = 
                            ElemDefinitionStore.addFormulaElem
                                (command.ElemCode|> ElemCode) 
-                               {Formula = command.Formula; Deps = [] }
+                               {Formula = command.Formula; Deps = CodeGenerationService.FormulaParser.getDeps command.Formula }
                                (command.DataType |> Type.GetType) 
                                store
 

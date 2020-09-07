@@ -110,9 +110,22 @@ module DataAccess =
                       "@ColumnName", box columnName
                       "@ElemDefinitionId", box elemDefinitionId ]
 
-            let insertFormulaElemDefinition ({ Formula = formula; Deps = _deps }) elemDefinitionId =
+            let insertDependency dependencyElemCode elemDefinitionId =
                 let executeCommand =
                     SqlCommandHelper.execute connectionString
+                
+                executeCommand
+                    "INSERT INTO ElemDependency(ElemDefinitionId, DependencyElemDefinitionId) VALUES (@ElemDefinitionId, (SELECT TOP 1 ElemDefinitionId FROM ElemDefinition WHERE Code = @DepCode))"
+                    [ "@DepCode", box dependencyElemCode
+                      "@ElemDefinitionId", box elemDefinitionId ]
+
+
+            let insertFormulaElemDefinition ({ Formula = formula; Deps = deps }) elemDefinitionId =
+                let executeCommand =
+                    SqlCommandHelper.execute connectionString
+                
+                for code in deps do
+                    insertDependency code elemDefinitionId
 
                 executeCommand
                     "INSERT INTO FromulaElemDefinition(Formula, ElemDefinitionId) VALUES (@Formula, @ElemDefinitionId)"
