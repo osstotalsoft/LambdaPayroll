@@ -71,4 +71,7 @@ module ElemDefinitionAdded =
     open LambdaPayroll.Application.Compilation
 
     let handle (_: ElemDefinitionAdded) =
-        Compile.handle <| Compile.Command ()
+        effect {
+            do! Mediator.sendCommand <| Compile.Command ()
+            return Some()
+        }

@@ -1,6 +1,7 @@
 ﻿namespace LambdaPayroll.Domain
 
 open System
+open NBB.Core.Abstractions
 open NBB.Core.Effects
 open NBB.Core.Effects.FSharp
 open NBB.Core.Evented.FSharp
@@ -42,7 +43,8 @@ and FormulaElemDefinition = { Formula: string; Deps: string list }
 type ElemDefinitionStoreEvent = 
     | ElemDefinitionStoreCreated of ElemDefinitionStore
     | ElemDefinitionAdded of elemDefinitionStoreId: ElemDefinitionStoreId * elemDefinition: ElemDefinition
-
+    interface IEvent
+        with member __.EventId: Guid = Guid.Empty //TODO: TBD if EventId should be stored on every element
 
 module ElemDefinitionStore =
     let create (elemDefs: ElemDefinition seq) = 

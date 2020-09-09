@@ -18,8 +18,8 @@ module HandlerUtils =
     open FSharp.Control.Tasks.V2
     open Microsoft.Extensions.DependencyInjection
 
-    type Effect<'a> = NBB.Core.Effects.FSharp.Effect<'a>
-    module Effect = NBB.Core.Effects.FSharp.Effect
+    type Effect<'a> = FSharp.Effect<'a>
+    module Effect = FSharp.Effect
 
     let setError errorText = 
         (clearResponse >=> setStatusCode 500 >=> text errorText)
@@ -36,17 +36,9 @@ module HandlerUtils =
         | Ok value -> json value
         | Error err -> setError err
 
-    let jsonResultOption = function
-        | Some result -> jsonResult result
-        | None -> setError "No result"
-
     let textResult = function
         | Ok value -> text value
         | Error err -> setError err
-    
-    let textResultOption = function
-        | Some result -> textResult result
-        | None -> setError "No result"
 
     let commandResult (command : IMetadataProvider<CommandMetadata>) : HttpHandler =
         fun (next : HttpFunc) (ctx : HttpContext) ->

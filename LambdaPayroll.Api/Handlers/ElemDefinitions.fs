@@ -11,8 +11,6 @@ module ElemDefinitions =
     let handler : HttpHandler = 
         subRoute "/elemDefinitions" (
             choose [
-                // POST >=> route  "/addFormulaElem"  >=> bindJson<AddFormulaElemDefinition> (ReadApplication.sendCommand |> interpretCommand) 
-                POST >=> route  "/addFormulaElem"  >=> bindJson<AddFormulaElemDefinition> (WriteApplication.sendCommand |> interpretCommand)
-                // POST >=> route  "/addDbElem"  >=> bindJson<AddDbElemDefinition> (ReadApplication.sendCommand |> interpretCommand)
-                POST >=> route  "/addDbElem"  >=> bindJson<AddDbElemDefinition> (WriteApplication.sendCommand  |> interpretCommand)
+                POST >=> route  "/addFormulaElem"  >=> bindJson<AddFormulaElemDefinition> (Mediator.sendCommand |> interpretCommand)
+                POST >=> route  "/addDbElem"  >=> bindJson<AddDbElemDefinition> (Mediator.sendCommand |> interpretCommand)
             ])

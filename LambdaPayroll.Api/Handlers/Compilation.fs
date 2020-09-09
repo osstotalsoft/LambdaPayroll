@@ -10,5 +10,5 @@ module Compilation =
     let handler : HttpHandler = 
         subRoute "/compilation" (
             choose [
-                GET >=> route  "/getGeneratedCode"  >=> ((ReadApplication.sendQuery (GetGeneratedCode.Query())) |> interpret textResultOption)
+                GET >=> route  "/getGeneratedCode"  >=> ((Mediator.sendQuery (GetGeneratedCode.Query())) |> interpret textResult)
             ])

@@ -44,9 +44,14 @@ let main argv =
         let applicationPipeline = 
             fun message ->
                 match box message with
-                | :? ICommand as command -> WriteApplication.sendCommand command 
-                | :? IEvent as event -> WriteApplication.publishEvent event
+                | :? ICommand as command -> Mediator.sendCommand command 
+                | :? IEvent as event -> Mediator.dispatchEvent event
                 | _ -> failwith "Invalid message"
+
+        let mediator = {
+            SendCommand = WriteApplication.sendCommand; 
+            SendQuery = WriteApplication.sendQuery'; 
+            DispatchEvent = WriteApplication.publishEvent}
 
         services.AddEffects() |> ignore
         services.AddMessagingEffects() |> ignore
@@ -55,6 +60,7 @@ let main argv =
             .AddSideEffectHandler(ElemDefinitionStoreRepo.save payrollConnString)
             .AddSideEffectHandler(DynamicAssembly.DynamicAssembly.compile)
             .AddSideEffectHandler(Common.handleException)
+            .AddSideEffectHandler(Mediator.handleGetMediator mediator)
             |> ignore;
 
         services.AddResiliency() |> ignore

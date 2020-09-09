@@ -16,6 +16,7 @@ open LambdaPayroll.Application
 open LambdaPayroll.Migrations
 open Microsoft.Extensions.DependencyInjection
 open LambdaPayroll.Infra.DynamicAssembly
+open LambdaPayroll.Infra.InteractiveEvalSession
 
 let configuration =
     let configurationBuilder = 
@@ -27,6 +28,10 @@ let configuration =
 let payrollConnString = configuration.GetConnectionString "LambdaPayroll"
 let hcmConnectionString = configuration.GetConnectionString "Hcm"
 
+let mediator =
+    { SendCommand = WriteApplication.sendCommand;
+      SendQuery = ReadApplication.sendQuery'
+      DispatchEvent = WriteApplication.publishEvent}
 
 let services = ServiceCollection();
 services.AddEffects() |> ignore
@@ -38,6 +43,12 @@ services
     .AddSideEffectHandler(GeneratedCodeCache.get)
     .AddSideEffectHandler(GeneratedCodeCache.set)
     .AddSideEffectHandler(DynamicAssembly.compile)
+    .AddSideEffectHandler(Mediator.handleGetMediator mediator)
+    .AddSideEffectHandler(DbElemValue.getOtherEmployeeContracts hcmConnectionString)
+    .AddSideEffectHandler(InteractiveEvalSessionCache.get)
+    .AddSideEffectHandler(InteractiveEvalSessionCache.set)
+    .AddSideEffectHandler(InteractiveSession.createSession)
+    .AddSideEffectHandler(InteractiveSession.evaluateInteraction)
     |> ignore
 
 
@@ -98,10 +109,10 @@ let ``It shoud evaluate formula with params (integration)`` () =
             .SqlDatabase(hcmConnectionString, null) 
             .WithScript("CreateObjects", 
                 "CREATE TABLE [dbo].[Salarii](
-            	    [ContractId] [int] NOT NULL,
-            	    [Month] [tinyint] NOT NULL,
-            	    [Year] [smallint] NOT NULL,
-            	    [SalariuBrut] [decimal](18, 0) NOT NULL
+                    [ContractId] [int] NOT NULL,
+                    [Month] [tinyint] NOT NULL,
+                    [Year] [smallint] NOT NULL,
+                    [SalariuBrut] [decimal](18, 0) NOT NULL
                 ) ON [PRIMARY]
                 GO")
             .WithScript("PopulateData", 
@@ -119,14 +130,14 @@ let ``It shoud evaluate formula with params (integration)`` () =
     use container = services.BuildServiceProvider();
     let interpreter = container.GetRequiredService<IInterpreter>()
 
-    let compileEff = WriteApplication.sendCommand <| Compile.Command ()
+    let compileEff = Mediator.sendCommand <| Compile.Command ()
     compileEff |> Effect.interpret interpreter |> Async.RunSynchronously |> ignore 
 
-    let eff = ReadApplication.sendQuery query
+    let eff = Mediator.sendQuery query
 
     // Act
     let result = eff |> Effect.interpret interpreter |> Async.RunSynchronously
 
     // Assert  
-    result |> should equal (Some(Ok ([900m :> obj; 100m :> obj])) : Result<obj list, string> option)
+    result |> should equal ((Ok [900m :> obj; 100m :> obj]) : Result<obj list, string>)
     

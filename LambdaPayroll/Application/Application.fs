@@ -24,11 +24,23 @@ module Middleware =
                 return Some()
             }
 
+module PipelineUtils = 
+    let terminateRequest<'a> : (Effect<'a option> -> Effect<'a>) =
+        Effect.map (function
+            | Some value -> value
+            | None -> failwith "No handler found")
+
+    let terminateEvent : (Effect<unit option> -> Effect<unit>) =
+        Effect.map ignore
+
+
 module ReadApplication =
     open LambdaPayroll.Application.Evaluation
+    open NBB.Core.Abstractions
     open RequestMiddleware
     open QueryHandler
     open Middleware
+    open PipelineUtils
 
     let private queryPipeline =
         log
@@ -40,17 +52,23 @@ module ReadApplication =
     let private commandPipeline = log << lift publishMessage
 
     let sendQuery (query: 'TQuery) = 
-        QueryMidleware.run queryPipeline query
+        QueryMidleware.run queryPipeline query |> terminateRequest
+    
+    let sendQuery' (query: IQuery) = 
+        RequestMiddleware.run queryPipeline query |> terminateRequest
 
     let sendCommand (cmd: 'TCommand) =
-        CommandMiddleware.run commandPipeline cmd
+        CommandMiddleware.run commandPipeline cmd |> terminateRequest
 
+    let publishEvent (ev: 'TEvent) = EventHandler.empty ev |> terminateEvent
 
 module WriteApplication =
     open RequestMiddleware
     open CommandHandler
     open LambdaPayroll.Application.Compilation
+    open NBB.Core.Abstractions
     open Middleware
+    open PipelineUtils
 
     let private commandPipeline =
         log
@@ -68,5 +86,6 @@ module WriteApplication =
         ]
 
 
-    let sendCommand (cmd: 'TCommand) = CommandMiddleware.run commandPipeline cmd 
-    let publishEvent (ev: 'TEvent) = EventMiddleware.run eventPipeline ev 
+    let sendCommand (cmd: 'TCommand) = CommandMiddleware.run commandPipeline cmd |> terminateRequest
+    let publishEvent (ev: 'TEvent) = EventMiddleware.run eventPipeline ev |> terminateEvent
+    let sendQuery' (q: IQuery) = RequestHandler.empty q |> terminateRequest

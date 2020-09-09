@@ -75,6 +75,11 @@ module App =
         let payrollConnString = context.Configuration.GetConnectionString "LambdaPayroll"
         let hcmConnectionString = context.Configuration.GetConnectionString "Hcm"
 
+        let mediator =
+            { SendCommand = WriteApplication.sendCommand
+              SendQuery = ReadApplication.sendQuery'
+              DispatchEvent = WriteApplication.publishEvent }
+        
         services.AddHostedService<HostedServices.CompileDefinitions>() |> ignore
         services.AddEffects() |> ignore
         services.AddMessagingEffects() |> ignore
@@ -93,6 +98,7 @@ module App =
             .AddSideEffectHandler(InteractiveEvalSessionCache.set)
             .AddSideEffectHandler(InteractiveSession.createSession)
             .AddSideEffectHandler(InteractiveSession.evaluateInteraction)
+            .AddSideEffectHandler(Mediator.handleGetMediator mediator)
 
             // To be used from the Worker process
             .AddSideEffectHandler(ElemDefinitionStoreRepo.save payrollConnString)
@@ -110,7 +116,7 @@ module App =
         let applicationPipeline = 
             fun message ->
                 match box message with
-                | :? IEvent as event -> WriteApplication.publishEvent event
+                | :? IEvent as event -> Mediator.dispatchEvent event
                 | _ -> failwith "Invalid message"
 
         
