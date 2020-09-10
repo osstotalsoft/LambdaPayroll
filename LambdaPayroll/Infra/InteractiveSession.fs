@@ -1,6 +1,8 @@
 ﻿namespace LambdaPayroll.Infra
 
 open LambdaPayroll.Domain
+open LambdaPayroll.Domain.InteractivePayrollElemService
+open LambdaPayroll.Application.InfraEffects
 open FSharp.Compiler.Interactive.Shell
 
 module InteractiveEvalSession =
@@ -21,6 +23,7 @@ module InteractiveEvalSession =
         open System.Text
         open FSharp.Compiler.SourceCodeServices
         open InteractiveEvalSessionService
+
 
         let private header = "
 #r \"LambdaPayroll.dll\"
@@ -68,12 +71,26 @@ module InteractiveEvalSession =
                     Ok <| InteractiveEvaluationSession fsiSession
                 | Choice2Of2 (exn:exn) -> exn |> mapException |> Error
 
-        let evaluateInteraction (EvalInteractionSideEffect(InteractiveEvaluationSession session, expression)) =
+        // let evaluateInteraction (EvalInteractionSideEffect(InteractiveEvaluationSession session, expression)) =
+        //     let res, warnings = session.EvalExpressionNonThrowing expression
+        //     if (warnings.Length > 0) then
+        //         warnings |> mapFsiErrors |> Error
+        //     else 
+        //         match res with
+        //         | Choice1Of2 (Some value) -> Ok value.ReflectionValue
+        //         | Choice1Of2 None ->  [{Message =  "Got no result"; Severity = "Error"; Range = None }] |> Error
+        //         | Choice2Of2 (exn:exn) -> exn |> mapException |> Error
+
+        
+        let evalToPayrollElem (EvalToPayrollElemSideEffect (InteractiveEvaluationSession session, expression)) =
             let res, warnings = session.EvalExpressionNonThrowing expression
             if (warnings.Length > 0) then
-                warnings |> mapFsiErrors |> Error
+                warnings |> mapFsiErrors  |> ErrorInfo.format |> Error
             else 
                 match res with
-                | Choice1Of2 (Some value) -> Ok value.ReflectionValue
-                | Choice1Of2 None ->  [{Message =  "Got no result"; Severity = "Error"; Range = None }] |> Error
-                | Choice2Of2 (exn:exn) -> exn |> mapException |> Error
+                | Choice1Of2 (Some value) -> 
+                    value.ReflectionValue |> DynamicAssembly.boxPayrollElemValue 
+                | Choice1Of2 None ->   
+                    [{Message =  "Got no result"; Severity = "Error"; Range = None }] |> ErrorInfo.format |> Error
+                | Choice2Of2 (exn:exn) -> 
+                    exn |> mapException |> ErrorInfo.format |> Error

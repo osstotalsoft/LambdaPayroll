@@ -1,32 +1,19 @@
-﻿namespace LambdaPayroll.Domain
+﻿namespace LambdaPayroll.Infra
 
-open NBB.Core.Effects
-open NBB.Core.Effects.FSharp
-open Core
+open LambdaPayroll.Application.InfraEffects
 
 module CodeGenerationService =
     open System
+    open LambdaPayroll.Domain
+    open CodeGenerationService
     open NBB.Core.FSharp.Data
     open NBB.Core.FSharp.Data.State
 
-    module FormulaParser =
-        open System.Text.RegularExpressions
-        let private pattern =  @"@([a-zA-Z0-9_]+)"
-        let private evaluator (m : Match) = m.Groups.[1].Value
-
-        let getDeps (formulaWithTokens) =
-            Regex.Matches(formulaWithTokens, pattern, RegexOptions.Compiled)
-            |> Seq.cast<Match>
-            |> Seq.map evaluator
-            |> Seq.toList
-
-        let getText (formulaWithTokens) =
-            Regex.Replace(formulaWithTokens, pattern, MatchEvaluator evaluator, RegexOptions.Compiled)
-
+   
     let private elemExpression ({ Code = ElemCode (code); Type = typ; DataType = dataType }: ElemDefinition) =
         match typ with
         | Db _ -> sprintf "HrAdmin.readFromDb<%s> \"%s\"" dataType.Name code
-        | Formula { Formula = formula } -> sprintf "%s" (formula |> FormulaParser.getText)
+        | Formula { Formula = formula } -> sprintf "%s" (formula |> FormulaParser.stripDepMarkers)
 
     let private elemstatement (elemDefinition: ElemDefinition) =
         let { Code = ElemCode (code) } = elemDefinition
@@ -56,7 +43,7 @@ open System
 open NBB.Core.Effects.FSharp
 "
 
-    let generateSourceCode (store: ElemDefinitionStore) =
+    let generateSourceCode (GenerateSourceCodeSideEffect store) =
         let rec buildLinesMultipleElems(elems: ElemCode list) =
             state {
                 let! results = elems |> List.traverseState buildLinesSingleElem
@@ -96,18 +83,19 @@ open NBB.Core.Effects.FSharp
         let lines, _ = State.run buildProgramLines Set.empty
         lines |> Result.map concat
 
+    let generateExpression (GenerateExpressionSideEffect formula) =
+        Ok <| FormulaParser.stripDepMarkers formula
+
+
 module GeneratedCodeCache =
-    type GetGeneratedCodeSideEffect() =
-        interface ISideEffect<Result<string, string>>
+    let mutable private cache: string option = None
 
-    type SetGeneratedCodeSideEffect =
-        | SetGeneratedCodeSideEffect of sourceCode: string
-        interface ISideEffect<unit>
+    let get (_: GeneratedCodeCache.GetGeneratedCodeSideEffect)  =
+        match cache with
+        | Some(sourceCode) -> Ok sourceCode
+        | None -> Error "Generated source code not available"
 
-    let get =
-        Effect.Of(GetGeneratedCodeSideEffect())
-        |> Effect.wrap
+    let set (GeneratedCodeCache.SetGeneratedCodeSideEffect sourceCode) =
+        cache <- Some sourceCode
 
-    let set sourceCode =
-        Effect.Of(SetGeneratedCodeSideEffect sourceCode)
-        |> Effect.wrap
+    

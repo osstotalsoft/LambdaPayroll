@@ -89,7 +89,7 @@ module App =
             .AddSideEffectHandler(DynamicAssemblyCache.set)
             .AddSideEffectHandler(GeneratedCodeCache.get)
             .AddSideEffectHandler(GeneratedCodeCache.set)
-            .AddSideEffectHandler(DynamicAssembly.compile)
+            .AddSideEffectHandler(DynamicAssemblyService.compile)
             .AddSideEffectHandler(ElemDefinitionStoreRepo.loadCurrent payrollConnString)
             .AddSideEffectHandler(DbElemValue.loadValue hcmConnectionString)
             .AddSideEffectHandler(DbElemValue.getAllEmployeeContracts hcmConnectionString)
@@ -97,9 +97,12 @@ module App =
             .AddSideEffectHandler(InteractiveEvalSessionCache.get)
             .AddSideEffectHandler(InteractiveEvalSessionCache.set)
             .AddSideEffectHandler(InteractiveSession.createSession)
-            .AddSideEffectHandler(InteractiveSession.evaluateInteraction)
+            .AddSideEffectHandler(InteractiveSession.evalToPayrollElem )
             .AddSideEffectHandler(Mediator.handleGetMediator mediator)
-
+            .AddSideEffectHandler(CodeGenerationService.generateSourceCode)
+            .AddSideEffectHandler(CodeGenerationService.generateExpression)
+            .AddSideEffectHandler(DynamicAssemblyService.findPayrollElem)
+            .AddSideEffectHandler(FormulaParsingService.getFormulaDeps)
             // To be used from the Worker process
             .AddSideEffectHandler(ElemDefinitionStoreRepo.save payrollConnString)
             |> ignore;

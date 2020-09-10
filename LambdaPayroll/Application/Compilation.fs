@@ -5,6 +5,7 @@ open NBB.Core.Effects.FSharp
 open NBB.Core.Abstractions
 open Core
 open LambdaPayroll.Domain
+open LambdaPayroll.Application.InfraEffects
 
 module Compile =
     type Command () =
@@ -13,7 +14,7 @@ module Compile =
     let handle (_: Command) =
            effect {
                 let! store = ElemDefinitionStoreRepo.loadCurrent
-                match CodeGenerationService.generateSourceCode store with
+                match! CodeGenerationService.generateSourceCode store with
                 | Ok sourceCode -> 
                     do! GeneratedCodeCache.set sourceCode
 

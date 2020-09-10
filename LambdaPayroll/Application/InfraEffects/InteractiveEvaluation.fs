@@ -1,12 +1,13 @@
-﻿namespace LambdaPayroll.Domain
+namespace LambdaPayroll.Application.InfraEffects
 
 open NBB.Core.Effects
 open NBB.Core.Effects.FSharp
 open System.Reflection
 open Core
 open FSharp.Compiler.Interactive.Shell
+open LambdaPayroll.Domain
 
-type InteractiveEvaluationSession = InteractiveEvaluationSession of FsiEvaluationSession
+//type InteractiveEvaluationSession = InteractiveEvaluationSession of FsiEvaluationSession
 
 module InteractiveEvalSessionService =
     type Range = {StartLine: int; EndLine: int; StartColumn: int; EndColumn: int}

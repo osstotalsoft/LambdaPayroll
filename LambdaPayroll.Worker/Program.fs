@@ -22,6 +22,7 @@ open NBB.Core.Effects.FSharp
 open NBB.Application.Mediator.FSharp
 open LambdaPayroll.Application
 
+
 [<EntryPoint>]
 let main argv =
 
@@ -58,7 +59,7 @@ let main argv =
         services
             .AddSideEffectHandler(ElemDefinitionStoreRepo.loadCurrent payrollConnString)
             .AddSideEffectHandler(ElemDefinitionStoreRepo.save payrollConnString)
-            .AddSideEffectHandler(DynamicAssembly.DynamicAssembly.compile)
+            .AddSideEffectHandler(DynamicAssemblyService.compile)
             .AddSideEffectHandler(Common.handleException)
             .AddSideEffectHandler(Mediator.handleGetMediator mediator)
             |> ignore;

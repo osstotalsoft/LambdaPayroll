@@ -42,16 +42,18 @@ services
     .AddSideEffectHandler(DynamicAssemblyCache.set)
     .AddSideEffectHandler(GeneratedCodeCache.get)
     .AddSideEffectHandler(GeneratedCodeCache.set)
-    .AddSideEffectHandler(DynamicAssembly.compile)
+    .AddSideEffectHandler(DynamicAssemblyService.compile)
     .AddSideEffectHandler(Mediator.handleGetMediator mediator)
     .AddSideEffectHandler(DbElemValue.getOtherEmployeeContracts hcmConnectionString)
     .AddSideEffectHandler(InteractiveEvalSessionCache.get)
     .AddSideEffectHandler(InteractiveEvalSessionCache.set)
     .AddSideEffectHandler(InteractiveSession.createSession)
-    .AddSideEffectHandler(InteractiveSession.evaluateInteraction)
+    .AddSideEffectHandler(InteractiveSession.evalToPayrollElem)
+    .AddSideEffectHandler(CodeGenerationService.generateSourceCode)
+    .AddSideEffectHandler(CodeGenerationService.generateExpression)
+    .AddSideEffectHandler(DynamicAssemblyService.findPayrollElem)
+    .AddSideEffectHandler(FormulaParsingService.getFormulaDeps)
     |> ignore
-
-
 
 [<Fact>]
 let ``It shoud evaluate formula with params (integration)`` () =

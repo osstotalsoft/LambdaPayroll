@@ -4,6 +4,7 @@ open NBB.Core.Effects.FSharp
 open LambdaPayroll.PublishedLanguage
 open NBB.Application.DataContracts
 open LambdaPayroll.Domain
+open LambdaPayroll.Application.InfraEffects
 open NBB.Core.Evented.FSharp
 open System
 
@@ -36,7 +37,7 @@ module AddFormulaElemDefinition =
             let! store = ElemDefinitionStoreRepo.loadCurrent
             let store' = {store with ElemDefinitions = store.ElemDefinitions.Add (elemDef.Code, elemDef)}
 
-            match CodeGenerationService.generateSourceCode (store') with
+            match! CodeGenerationService.generateSourceCode (store') with
             | Ok sourceCode -> 
                 match! DynamicAssemblyService.compile sourceCode with
                 | Ok _ ->
@@ -51,10 +52,11 @@ module AddFormulaElemDefinition =
     let handle (command: AddFormulaElemDefinition) =
         effect {
             let! store = ElemDefinitionStoreRepo.loadCurrent
+            let! formulaDeps = FormulaParsingService.getFormulaDeps command.Formula
             let! eventedStore = 
                            ElemDefinitionStore.addFormulaElem
                                (command.ElemCode|> ElemCode) 
-                               {Formula = command.Formula; Deps = CodeGenerationService.FormulaParser.getDeps command.Formula }
+                               {Formula = command.Formula; Deps = formulaDeps }
                                (command.DataType |> Type.GetType) 
                                store
 

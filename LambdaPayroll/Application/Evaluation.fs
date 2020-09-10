@@ -4,6 +4,8 @@ open NBB.Core.Abstractions
 open NBB.Core.Effects.FSharp
 open Core
 open LambdaPayroll.Domain
+
+open LambdaPayroll.Application.InfraEffects
 open System
 
 
@@ -23,8 +25,8 @@ module EvaluateSingleCode =
             ContractId query.ContractId, YearMonth(query.Year, query.Month)
 
         effect {
-            let! elemAssembly = DynamicAssemblyCache.get
-            let! result = ElemEvaluationService.evaluateElem elemAssembly code ctx
+            let! (DynamicAssembly elemAssembly) = DynamicAssemblyCache.get
+            let! result = ElemEvaluationService.evaluateElem (ElemStore elemAssembly) code ctx
 
             return Some result
         }
@@ -46,14 +48,14 @@ module EvaluateMultipleCodes =
             ContractId query.ContractId, YearMonth(query.Year, query.Month)
 
         effect {
-            let! elemAssembly = DynamicAssemblyCache.get
-            let! result = ElemEvaluationService.evaluateElems elemAssembly codes ctx
+            let! (DynamicAssembly elemAssembly) = DynamicAssemblyCache.get
+            let! result = ElemEvaluationService.evaluateElems (ElemStore elemAssembly) codes ctx
 
             return Some result
         }
 
 module EvaluateExpression = 
-    open LambdaPayroll.Domain.CodeGenerationService
+    open LambdaPayroll.Application.InfraEffects.CodeGenerationService
     type Query =
         { Expression: string
           ContractId: int
@@ -67,9 +69,12 @@ module EvaluateExpression =
         let ctx = ContractId query.ContractId, YearMonth(query.Year, query.Month)
 
         effect {
-            let expression = FormulaParser.getText query.Expression
-            let! session = InteractiveEvalSessionCache.get
-            let! result = InteractiveEvaluationService.evaluateExpression session expression ctx
+            match! (generatExpression query.Expression) with
+            | Ok expression -> 
+                let! session = InteractiveEvalSessionCache.get
+                let! result = ElemEvaluationService.evaluateExpression session expression ctx
 
-            return Some result
+                return Some result
+            | Error e -> 
+                return Some <| Error e
         }

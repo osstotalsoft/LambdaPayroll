@@ -1,56 +1,65 @@
 ﻿namespace LambdaPayroll.Domain
 
-open System
 open NBB.Core.Effects.FSharp
 open NBB.Core.FSharp.Data.Reader
 open NBB.Core.Effects.FSharp.Data.ReaderEffect
 open NBB.Core.Effects.FSharp.Data.ReaderStateEffect
 open NBB.Core.Effects.FSharp.Data.StateEffect
+open FSharp.Compiler.Interactive.Shell
 open NBB.Core.FSharp.Data
 open Core
 
+type ElemStore = ElemStore of System.Reflection.Assembly
+module ElemRepo =
+    open NBB.Core.Effects
+    
+    type FindPayrollElemSideEffect =
+        | FindPayrollElemSideEffect of store:ElemStore * elemCode: ElemCode
+        interface ISideEffect<Result<PayrollElem<obj>, string>>
+     
+    let findPayrollElem elemCode = Effect.Of (FindPayrollElemSideEffect elemCode) |> Effect.wrap
+
+type InteractiveEvaluationSession =  InteractiveEvaluationSession of FsiEvaluationSession
+
+module InteractivePayrollElemService =
+    open NBB.Core.Effects
+    type EvalToPayrollElemSideEffect =
+        | EvalToPayrollElemSideEffect of session: InteractiveEvaluationSession * expression: string
+        interface ISideEffect<Result<PayrollElem<obj>, string>>
+
+    let evalToPayrollElem expression = Effect.Of (EvalToPayrollElemSideEffect expression) |> Effect.wrap
+
 module ElemEvaluationService =
-    type EvaluateElem = DynamicAssembly -> ElemCode -> PayrollElemContext -> Effect<Result<obj, string>>
+    type EvaluateElem = ElemStore -> ElemCode -> PayrollElemContext -> Effect<Result<obj, string>>
 
     let evaluateElem: EvaluateElem =
-        fun dynamicAssembly elemCode elemContext ->
-            DynamicAssembly.findPayrollElem dynamicAssembly elemCode
-            |> Result.traverseEffect(fun payrollElem -> payrollElem elemContext) 
-            |> Effect.map Result.join
+       fun elemStore elemCode elemContext ->
+           effect {
+               let! payrollElemResult = ElemRepo.findPayrollElem (elemStore, elemCode)
 
-    //let evaluateElem2: EvaluateElem =
-    //    fun assembly elemCode elemContext ->
-    //        effect {
-    //            let payrollElemResult =
-    //                DynamicAssembly.findPayrollElem assembly elemCode
+               match payrollElemResult with
+               | Ok payrollElem -> return! payrollElem elemContext
+               | Error e -> return Error e
+           }
 
-    //            match payrollElemResult with
-    //            | Ok payrollElem ->
-    //                let! result = payrollElem elemContext
-    //                return result
-    //            | Error e -> return Error e
-    //        }
-
-    type EvaluateElems = DynamicAssembly -> ElemCode list -> PayrollElemContext -> Effect<Result<obj list, string>>
+    type EvaluateElems = ElemStore -> ElemCode list -> PayrollElemContext -> Effect<Result<obj list, string>>
 
     let evaluateElems: EvaluateElems =
-        fun dynamicAssembly elemCodes elemContext ->
+        fun elemStore elemCodes elemContext ->
             elemCodes
-            |> List.traverseEffect (fun elemCode -> evaluateElem dynamicAssembly elemCode elemContext)
+            |> List.traverseEffect (fun elemCode -> evaluateElem elemStore elemCode elemContext)
             |> Effect.map List.sequenceResult
 
-module InteractiveEvaluationService = 
-    open LambdaPayroll.Domain.InteractiveEvalSessionService
+    open InteractivePayrollElemService
     type EvaluateExpression = InteractiveEvaluationSession -> string -> PayrollElemContext -> Effect<Result<obj, string>>
     
     let evaluateExpression : EvaluateExpression =
         fun interactiveEvalSession expression elemContext ->
             effect {
-                let! result = evalInteraction (interactiveEvalSession, expression)
+                let! result = evalToPayrollElem (interactiveEvalSession, expression)
                 return!
                     result 
-                    |> Result.mapError ErrorInfo.format
-                    |> Result.bind DynamicAssembly.boxPayrollElemValue 
                     |> Result.traverseEffect (fun payrollElem -> payrollElem elemContext)
                     |> Effect.map Result.join
             }
+
