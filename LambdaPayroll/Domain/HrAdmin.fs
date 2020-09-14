@@ -18,10 +18,10 @@ let load definition (contractId, yearMonth) =
 
 
 let readFromDb<'a> (code: string): PayrollElem<'a> =
-    let cast (value: 'b) =
-        if isNull value then Error "Value not found in HR DB"
+    let cast (code: string) (value: 'b) =
+        if isNull value then Error <| sprintf "Value for %s not found in HR DB" code
         else if typeof<'a> = value.GetType() then Ok(box value :?> 'a)
-        else Error "Invalid elem type"
+        else Error <| sprintf "Invalid elem type for %s (expected %s and received %s)" code (typeof<'a>).Name (value.GetType().Name)
 
     fun (contractId, yearMonth) ->
         effect {
@@ -32,7 +32,7 @@ let readFromDb<'a> (code: string): PayrollElem<'a> =
                 match elemDefinition.Type with
                 | Db dbElemDefinition ->
                     let! result = load dbElemDefinition (contractId, yearMonth)
-                    return result |> Result.bind cast
+                    return result |> Result.bind (cast code)
                 | _ -> return Error "Invalid elem definition type"
             | Error e -> return Error e
         }
@@ -47,7 +47,7 @@ let getOtherEmployeeContracts contractId =
 
 
 type GetAllEmployeeContractsSideEffect =
-    | GetAllEmployeeContractsSideEffect of contractId: ContractId
+    | GetAllEmployeeContractsSideEffect of contractId: ContractId * yearMonth: YearMonth
     interface ISideEffect<ContractId list>
 
 let getAllEmployeeContracts contractId =

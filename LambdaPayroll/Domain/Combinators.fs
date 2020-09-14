@@ -44,8 +44,8 @@ module HrCombinators =
     let allEmployeeContracts: PayrollElem<PayrollElemContext list> =
         fun (contractId, yearMonth) ->
             effect {
-                let! allContracts = HrAdmin.getAllEmployeeContracts contractId
-
+                let! allContracts = HrAdmin.getAllEmployeeContracts (contractId, yearMonth)
+                  
                 let allContractsElemResults =
                     allContracts
                     |> List.map (fun x -> (x, yearMonth))
@@ -68,10 +68,36 @@ module NumericCombinators =
     let inline (/) (a: PayrollElem< ^a > when (^a or ^b): (static member (/): ^a * ^b -> ^c)) (b: PayrollElem< ^b >) =
         PayrollElem.lift2 (/) a b
 
+    let inline decimal (a: PayrollElem< ^a > when ^a : (static member op_Explicit: ^a -> decimal)) =
+        PayrollElem.map (decimal) a
+
+    let inline max<'a when ^a : comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) =
+        PayrollElem.lift2 max a b
+
+    let inline min<'a when ^a : comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) =
+        PayrollElem.lift2 min a b
+
+    let inline (>) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) =
+        PayrollElem.lift2 (>) a b
+
+    let inline (>=) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) =
+        PayrollElem.lift2 (>=) a b
+
+    let inline (<) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) =
+        PayrollElem.lift2 (<) a b
+
+    let inline (<=) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) =
+        PayrollElem.lift2 (<=) a b
+
+    let inline (=) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) =
+        PayrollElem.lift2 (=) a b
+
+    let constant = Payroll.constant
 
     let ceiling (a: PayrollElem<decimal>) =
         // fsharplint:disable-next-line
         PayrollElem.map (fun (d: decimal) -> Math.Ceiling d) a
+
 
     let inline sum (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a) and ^a: (static member Zero: ^a))
                    : PayrollElem< ^a > =
@@ -79,6 +105,12 @@ module NumericCombinators =
 
     let inline avg (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a)): PayrollElem< ^a > =
         xs |> PayrollElem.map List.average
+
+    let inline maxItem (xs: PayrollElem< ^a list> when ^a: comparison): PayrollElem< ^a > =
+        xs |> PayrollElem.map List.max
+
+    let inline minItem (xs: PayrollElem< ^a list> when ^a: comparison): PayrollElem< ^a > =
+        xs |> PayrollElem.map List.min
 
 [<AutoOpen>]
 module BooleanCombinators =
@@ -95,6 +127,9 @@ module BooleanCombinators =
     let (&&) = PayrollElem.lift2 (&&)
     let (||) = PayrollElem.lift2 (||)
     let (not) = PayrollElem.map (not)
+   
+    
+    //let a = max (Payroll.constant 1) (Payroll.constant 2)
 
 [<AutoOpen>]
 module UtilityCombinators =

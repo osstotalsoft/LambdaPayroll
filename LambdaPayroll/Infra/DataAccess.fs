@@ -189,15 +189,20 @@ module DataAccess =
 
     
         let getAllEmployeeContracts (connectionString: string)
-                      (HrAdmin.GetAllEmployeeContractsSideEffect((ContractId contractId)))
+                      (HrAdmin.GetAllEmployeeContractsSideEffect((ContractId contractId), (YearMonth (year, month))))
                       : ContractId list =
             let read = SqlCommandHelper.read connectionString
 
             let results =
                 read (fun r -> unbox r.[0] )
-                    "SELECT DISTINCT ContractId FROM Salarii 
-                        WHERE PersonId = (SELECT TOP 1 PersonId from Salarii WHERE ContractId = @ContractId)"
-                    ["@ContractId", box contractId]
+                    "SELECT ContractId from hr.Contract 
+                        WHERE OwnerDataId = (SELECT TOP 1 OwnerDataId from hr.Contract WHERE [Year] = @Year and [Month] = @Month and ContractId = @ContractId)
+	                    AND [Year] = @Year and [Month] = @Month "
+                    [
+                        "@ContractId", box contractId
+                        "@Year", box year
+                        "@Month", box month
+                    ]
 
             results
             |> List.map ContractId
