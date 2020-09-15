@@ -17,7 +17,8 @@ let load definition (contractId, yearMonth) =
     |> Effect.wrap
 
 
-let readFromDb<'a> (code: string): PayrollElem<'a> =
+let readFromDb<'a> (ElemCode code) (dbElemDefinition: DbElemDefinition): PayrollElem<'a> =
+    
     let cast (code: string) (value: 'b) =
         if isNull value then Error <| sprintf "Value for %s not found in HR DB" code
         else if typeof<'a> = value.GetType() then Ok(box value :?> 'a)
@@ -25,16 +26,8 @@ let readFromDb<'a> (code: string): PayrollElem<'a> =
 
     fun (contractId, yearMonth) ->
         effect {
-            let! elemDefinitionStore = ElemDefinitionStoreRepo.loadCurrent
-
-            match ElemDefinitionStore.findElemDefinition elemDefinitionStore (ElemCode code) with
-            | Ok (elemDefinition) ->
-                match elemDefinition.Type with
-                | Db dbElemDefinition ->
-                    let! result = load dbElemDefinition (contractId, yearMonth)
-                    return result |> Result.bind (cast code)
-                | _ -> return Error "Invalid elem definition type"
-            | Error e -> return Error e
+            let! result = load dbElemDefinition (contractId, yearMonth)
+            return result |> Result.bind (cast code)
         }
 
 type GetOtherEmployeeContractsSideEffect =

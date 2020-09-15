@@ -5,15 +5,26 @@ open Combinators
 open DefaultPayrollElems
 open System
 open NBB.Core.Effects.FSharp
+open LambdaPayroll.Domain
 
 //HrAdmin elems
 let salariuBrut =
-    HrAdmin.readFromDb<decimal> "salariuBrut"
+    HrAdmin.readFromDb<decimal>
+        (ElemCode "salariuBrut")
+        { TableName = "Salarii"
+          ColumnName = "SalariuBrut" }
 
 let esteContractPrincipal =
-    HrAdmin.readFromDb<bool> "esteContractPrincipal"
+    HrAdmin.readFromDb<bool>
+        (ElemCode "esteContractPrincipal")
+        { TableName = "Salarii"
+          ColumnName = "EsteContractPrincipal" }
 
-let esteActiv = HrAdmin.readFromDb<bool> "esteActiv"
+let esteActiv =
+    HrAdmin.readFromDb<bool>
+        (ElemCode "esteActiv")
+        { TableName = "Salarii"
+          ColumnName = "EsteActiv" }
 
 
 //payroll constants
@@ -61,7 +72,8 @@ let esteActivInToateUltimele3Luni =
     from 3 |> lastMonths |> select esteActiv |> all
 
 let mediaSalariuluiBrutInUltimele3LuniActive =
-    from 3 |> lastMonths
+    from 3
+    |> lastMonths
     |> where esteActiv
     |> select salariuBrut
     |> avg

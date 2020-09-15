@@ -12,7 +12,10 @@ module CodeGenerationService =
    
     let private elemExpression ({ Code = ElemCode (code); Type = typ; DataType = dataType }: ElemDefinition) =
         match typ with
-        | Db _ -> sprintf "HrAdmin.readFromDb<%s> \"%s\"" dataType.Name code
+        | Db {TableName=tableName; ColumnName=columnName} -> 
+            sprintf 
+                "HrAdmin.readFromDb<%s> (ElemCode \"%s\") { TableName = \"%s\"; ColumnName = \"%s\" }" 
+                dataType.Name code tableName columnName
         | Formula { Formula = formula } -> sprintf "%s" (formula |> FormulaParser.stripDepMarkers)
 
     let private elemstatement (elemDefinition: ElemDefinition) =
@@ -41,6 +44,7 @@ open Combinators
 open DefaultPayrollElems
 open System
 open NBB.Core.Effects.FSharp
+open LambdaPayroll.Domain
 "
 
     let generateSourceCode (GenerateSourceCodeSideEffect store) =
