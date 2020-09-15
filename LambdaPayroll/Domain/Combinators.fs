@@ -44,8 +44,8 @@ module HrCombinators =
     let allEmployeeContracts: PayrollElem<PayrollElemContext list> =
         fun (contractId, yearMonth) ->
             effect {
-                let! allContracts = HrAdmin.getAllEmployeeContracts (contractId, yearMonth)
-                  
+                let! allContracts = HrAdmin.getAllEmployeeContracts contractId yearMonth
+
                 let allContractsElemResults =
                     allContracts
                     |> List.map (fun x -> (x, yearMonth))
@@ -68,29 +68,22 @@ module NumericCombinators =
     let inline (/) (a: PayrollElem< ^a > when (^a or ^b): (static member (/): ^a * ^b -> ^c)) (b: PayrollElem< ^b >) =
         PayrollElem.lift2 (/) a b
 
-    let inline decimal (a: PayrollElem< ^a > when ^a : (static member op_Explicit: ^a -> decimal)) =
+    let inline decimal (a: PayrollElem< ^a > when ^a: (static member op_Explicit: ^a -> decimal)) =
         PayrollElem.map (decimal) a
 
-    let inline max<'a when ^a : comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) =
-        PayrollElem.lift2 max a b
+    let inline max<'a when ^a: comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) = PayrollElem.lift2 max a b
 
-    let inline min<'a when ^a : comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) =
-        PayrollElem.lift2 min a b
+    let inline min<'a when ^a: comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) = PayrollElem.lift2 min a b
 
-    let inline (>) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) =
-        PayrollElem.lift2 (>) a b
+    let inline (>) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) = PayrollElem.lift2 (>) a b
 
-    let inline (>=) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) =
-        PayrollElem.lift2 (>=) a b
+    let inline (>=) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) = PayrollElem.lift2 (>=) a b
 
-    let inline (<) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) =
-        PayrollElem.lift2 (<) a b
+    let inline (<) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) = PayrollElem.lift2 (<) a b
 
-    let inline (<=) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) =
-        PayrollElem.lift2 (<=) a b
+    let inline (<=) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) = PayrollElem.lift2 (<=) a b
 
-    let inline (=) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) =
-        PayrollElem.lift2 (=) a b
+    let inline (=) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) = PayrollElem.lift2 (=) a b
 
     let constant = Payroll.constant
 
@@ -99,8 +92,7 @@ module NumericCombinators =
         PayrollElem.map (fun (d: decimal) -> Math.Ceiling d) a
 
 
-    let inline sum (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a) and ^a: (static member Zero: ^a))
-                   : PayrollElem< ^a > =
+    let inline sum (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a) and ^a: (static member Zero: ^a)): PayrollElem< ^a > =
         xs |> PayrollElem.map List.sum
 
     let inline avg (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a)): PayrollElem< ^a > =
@@ -127,9 +119,7 @@ module BooleanCombinators =
     let (&&) = PayrollElem.lift2 (&&)
     let (||) = PayrollElem.lift2 (||)
     let (not) = PayrollElem.map (not)
-   
-    
-    //let a = max (Payroll.constant 1) (Payroll.constant 2)
+
 
 [<AutoOpen>]
 module UtilityCombinators =
@@ -169,6 +159,10 @@ module QueryCombinators =
             (List.map selector
              >> List.sequencePayrollElemResult)
 
+    let selectItems (selector: PayrollElem<'a> -> PayrollElem<'b>) (source: PayrollElem<'a list>): PayrollElem<'b list> =
+        source
+        |> PayrollElem.bind (List.traversePayrollElem (PayrollElem.return' >> selector))
+
     let Then = id
     let Else = id
 
@@ -186,3 +180,37 @@ module QueryCombinators =
             |> (List.map >> PayrollElemResult.map) mapping
             |> PayrollElemResult.bind List.sequencePayrollElemResult
             |> PayrollElemResult.map (List.filter snd >> List.map fst)
+
+    let whereItems (predicate: PayrollElem<'a> -> PayrollElem<bool>) (source: PayrollElem<'a list>): PayrollElem<'a list> =
+        let tuple2 a b = a, b
+        source
+        |> PayrollElem.bind
+            (List.traversePayrollElem (fun b ->
+                b
+                |> PayrollElem.return'
+                |> predicate
+                |> PayrollElem.map (tuple2 b)))
+        |> PayrollElem.map (List.filter snd >> List.map fst)
+
+// TODO: find solution for overloading
+// module OverloadTest =
+//     open PayrollElem
+//     type Select =
+//         static member Select  (selector: PayrollElem<'a> -> PayrollElem<'b>, source: PayrollElem<'a list>): PayrollElem<'b list> =
+//              failwith "Not Implemented"
+
+//         static member Select  (selector: PayrollElem<'a>, source: PayrollElem<PayrollElemContext list>): PayrollElem<'b list> =
+//              failwith "Not Implemented"
+
+//         static member inline Invoke (selector: 't) (source: PayrollElem<'a list>) : PayrollElem<'b list> =
+//             let inline call (_mthd: 'M, f , input: 'I) = ((^M) : (static member Select : _*_ -> _) f, input)
+//             call (Unchecked.defaultof<Select>, selector, source)
+
+//     let inline selectx selector source = Select.Invoke selector source
+
+//     let query' = from allEmployeeContracts |> selectx (Payroll.constant 0m)
+
+//     let query (deductions: PayrollElem<Deduction list>) =
+//         from deductions
+//         |> where1 (fun it -> _rangeStart it > Payroll.constant 0m)
+//         |> selectx (PayrollElem.map id)

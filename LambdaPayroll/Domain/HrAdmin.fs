@@ -50,6 +50,6 @@ type GetAllEmployeeContractsSideEffect =
     | GetAllEmployeeContractsSideEffect of contractId: ContractId * yearMonth: YearMonth
     interface ISideEffect<ContractId list>
 
-let getAllEmployeeContracts contractId =
-    (Effect.Of(GetAllEmployeeContractsSideEffect contractId))
+let getAllEmployeeContracts contractId yearMonth =
+    Effect.Of(GetAllEmployeeContractsSideEffect (contractId, yearMonth))
     |> Effect.wrap
