@@ -35,10 +35,13 @@ and
     override this.GetHashCode() =
         hash this.Code
 and ElemType = 
-    | Db of DbElemDefinition
+    | DbScalar of DbScalarElemDefinition
+    | DbCollection of DbCollectionElemDefinition
     | Formula of FormulaElemDefinition
-and DbElemDefinition = { TableName: string; ColumnName: string }
+and DbScalarElemDefinition = { TableName: string; ColumnName: string }
+and DbCollectionElemDefinition = { TableName: string; Columns: DbColumnDefinition list }
 and FormulaElemDefinition = { Formula: string; Deps: string list }
+and DbColumnDefinition =  { ColumnName: string; ColumnDataType: string}
 
 type ElemDefinitionStoreEvent = 
     | ElemDefinitionStoreCreated of ElemDefinitionStore
@@ -58,14 +61,14 @@ module ElemDefinitionStore =
             return store
         }
 
-    let addDbElem (code:ElemCode) (dbElemDefinition: DbElemDefinition) (dataType: Type) (store: ElemDefinitionStore) =
+    let addDbElem (code:ElemCode) (dbElemDefinition: DbScalarElemDefinition) (dataType: Type) (store: ElemDefinitionStore) =
         effect {
             if store.ElemDefinitions.ContainsKey code 
             then do! Exception.throw "Elem already defined"
             return evented {
                 let elemDef = {
                     Code = code
-                    Type = Db(dbElemDefinition)
+                    Type = DbScalar(dbElemDefinition)
                     DataType = dataType
                 }
                 do! addEvent (ElemDefinitionAdded (store.Id, elemDef))

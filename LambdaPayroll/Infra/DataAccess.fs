@@ -36,6 +36,8 @@ module DataAccess =
                       yield f read ]
 
     module ElemDefinitionStoreRepo =
+        open Newtonsoft.Json
+
         let mutable private cache: ElemDefinitionStore option = None
 
         let private splitDeps: string option -> string list =
@@ -57,9 +59,10 @@ module DataAccess =
                                Type = unbox r.[2]
                                TableName = unboxOption r.[3]
                                ColumnName = unboxOption r.[4]
-                               Formula = unboxOption r.[5]
-                               FormulaDeps = unboxOption r.[6] |})
-                            "SELECT Code, DataType, Type, TableName, ColumnName, Formula, FormulaDeps FROM VW_ElemDefinitions"
+                               ColumnsSpec = unboxOption r.[5]
+                               Formula = unboxOption r.[6]
+                               FormulaDeps = unboxOption r.[7] |})
+                            "SELECT Code, DataType, Type, TableName, ColumnName, ColumnsSpec, Formula, FormulaDeps FROM VW_ElemDefinitions"
                             []
 
                     results
@@ -73,9 +76,13 @@ module DataAccess =
                                       { Formula = item.Formula.Value
                                         Deps = (splitDeps item.FormulaDeps) }
                               | "Db" ->
-                                  Db
+                                  DbScalar
                                       { TableName = item.TableName.Value
                                         ColumnName = item.ColumnName.Value }
+                              | "DbCollection" ->
+                                  DbCollection
+                                      { TableName = item.TableName.Value
+                                        Columns = JsonConvert.DeserializeObject<DbColumnDefinition list> item.ColumnsSpec.Value }
                               | _ -> failwith "DB configuration errror"
                           DataType = Type.GetType(item.DataType) })
                     |> ElemDefinitionStore.create
@@ -138,7 +145,7 @@ module DataAccess =
                 | ElemDefinitionAdded (_elemDefinitionStoreId, elemDefinition) ->
                     let elemDefinitionId = insertElemDefinition elemDefinition
                     match elemDefinition.Type with
-                    | Db dbElemDefinition -> insertDbElemDefinition dbElemDefinition elemDefinitionId
+                    | DbScalar dbElemDefinition -> insertDbElemDefinition dbElemDefinition elemDefinitionId
                     | Formula formulaElemDefinition ->
                         insertFormulaElemDefinition formulaElemDefinition elemDefinitionId
                 | ElemDefinitionStoreCreated _ -> ()
@@ -148,11 +155,12 @@ module DataAccess =
             cache <- None
 
     module DbElemValue =
+        open System.Collections.Generic
         open System.Data.SqlClient
         open Core
 
-        let loadValue (connectionString: string)
-                      ({ Definition = definition; Context = context }: HrAdmin.LoadSideEffect)
+        let loadScalar (connectionString: string)
+                      ({ Definition = definition; Context = context }: HrAdmin.LoadScalarSideEffect)
                       : Result<obj, string> =
             let executeCommand =
                 SqlCommandHelper.executeScalar connectionString
@@ -165,6 +173,31 @@ module DataAccess =
                     (sprintf
                         "SELECT TOP 1 %s FROM %s WHERE ContractId=@ContractId AND Month=@Month AND Year=@Year"
                          column
+                         table)
+                    [ "@ContractId", box contractId
+                      "@Month", box month
+                      "@Year", box year ]
+
+            Result.Ok result
+
+        let loadCollection (connectionString: string)
+                      ({ Definition = definition; Context = context }: HrAdmin.LoadCollectionSideEffect)
+                      : Result<obj[] list, string> =
+            let read =
+                SqlCommandHelper.read connectionString
+
+            let { TableName = table; Columns = columnDefs } = definition
+            let (ContractId contractId), (YearMonth (year, month)) = context
+
+            let strJoin (separator: string) (values: IEnumerable<string>) = String.Join (separator, values)
+            let columnNames = columnDefs |> List.map (fun def -> def.ColumnName) |> strJoin (", ")
+            let columnCount = columnDefs.Length
+
+            let result =
+                read (fun r -> [| for i in [1..columnCount] do r.[i-1] |]) 
+                    (sprintf
+                        "SELECT %s FROM %s WHERE ContractId=@ContractId AND Month=@Month AND Year=@Year"
+                         columnNames
                          table)
                     [ "@ContractId", box contractId
                       "@Month", box month

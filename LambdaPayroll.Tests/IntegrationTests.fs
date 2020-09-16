@@ -37,7 +37,8 @@ let services = ServiceCollection();
 services.AddEffects() |> ignore
 services
     .AddSideEffectHandler(ElemDefinitionStoreRepo.loadCurrent payrollConnString)
-    .AddSideEffectHandler(DbElemValue.loadValue hcmConnectionString)
+    .AddSideEffectHandler(DbElemValue.loadScalar hcmConnectionString)
+    .AddSideEffectHandler(DbElemValue.loadCollection hcmConnectionString)
     .AddSideEffectHandler(DynamicAssemblyCache.get)
     .AddSideEffectHandler(DynamicAssemblyCache.set)
     .AddSideEffectHandler(GeneratedCodeCache.get)

@@ -9,19 +9,19 @@ open LambdaPayroll.Domain
 
 //HrAdmin elems
 let salariuBrut =
-    HrAdmin.readFromDb<decimal>
+    HrAdmin.readScalarFromDb<decimal>
         (ElemCode "salariuBrut")
         { TableName = "Salarii"
           ColumnName = "SalariuBrut" }
 
 let esteContractPrincipal =
-    HrAdmin.readFromDb<bool>
+    HrAdmin.readScalarFromDb<bool>
         (ElemCode "esteContractPrincipal")
         { TableName = "Salarii"
           ColumnName = "EsteContractPrincipal" }
 
 let esteActiv =
-    HrAdmin.readFromDb<bool>
+    HrAdmin.readScalarFromDb<bool>
         (ElemCode "esteActiv")
         { TableName = "Salarii"
           ColumnName = "EsteActiv" }

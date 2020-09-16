@@ -159,7 +159,7 @@ module QueryCombinators =
             (List.map selector
              >> List.sequencePayrollElemResult)
 
-    let selectItems (selector: PayrollElem<'a> -> PayrollElem<'b>) (source: PayrollElem<'a list>): PayrollElem<'b list> =
+    let select' (selector: PayrollElem<'a> -> PayrollElem<'b>) (source: PayrollElem<'a list>): PayrollElem<'b list> =
         source
         |> PayrollElem.bind (List.traversePayrollElem (PayrollElem.return' >> selector))
 
@@ -181,7 +181,7 @@ module QueryCombinators =
             |> PayrollElemResult.bind List.sequencePayrollElemResult
             |> PayrollElemResult.map (List.filter snd >> List.map fst)
 
-    let whereItems (predicate: PayrollElem<'a> -> PayrollElem<bool>) (source: PayrollElem<'a list>): PayrollElem<'a list> =
+    let where' (predicate: PayrollElem<'a> -> PayrollElem<bool>) (source: PayrollElem<'a list>): PayrollElem<'a list> =
         let tuple2 a b = a, b
         source
         |> PayrollElem.bind

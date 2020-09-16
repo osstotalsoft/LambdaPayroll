@@ -9,14 +9,40 @@ module CodeGenerationService =
     open NBB.Core.FSharp.Data
     open NBB.Core.FSharp.Data.State
 
+    let private recordAccessorModule (ElemCode code) (elemDef: DbCollectionElemDefinition) =
+        let accessors =
+            elemDef.Columns 
+            |> List.map (fun colDef -> (sprintf "let inline _%s a = PayrollElem.map (fun x -> (^a: (member %s: _) x)) a" colDef.ColumnName colDef.ColumnName))
+            |> String.concat "\n    "
+        
+        (sprintf "[<AutoOpen>]
+module %s =
+    %s
+" code accessors)
    
     let private elemExpression ({ Code = ElemCode (code); Type = typ; DataType = dataType }: ElemDefinition) =
         match typ with
-        | Db {TableName=tableName; ColumnName=columnName} -> 
+        | DbScalar {TableName=tableName; ColumnName=columnName} -> 
             sprintf 
-                "HrAdmin.readFromDb<%s> (ElemCode \"%s\") { TableName = \"%s\"; ColumnName = \"%s\" }" 
+                "HrAdmin.readScalarFromDb<%s> (ElemCode \"%s\") { TableName = \"%s\"; ColumnName = \"%s\" }" 
                 dataType.Name code tableName columnName
         | Formula { Formula = formula } -> sprintf "%s" (formula |> FormulaParser.stripDepMarkers)
+        | DbCollection {TableName = tableName; Columns= columnDefs} ->
+            
+            let record = 
+                sprintf "{|%s|}"
+                    (columnDefs |> List.map (fun colDef -> (sprintf "%s: %s" colDef.ColumnName colDef.ColumnDataType)) |> String.concat "; ")
+
+            let columns =
+                sprintf "[%s]"
+                    (columnDefs |> List.map (fun colDef -> (sprintf "{ColumnName= \"%s\"; ColumnDataType = \"%s\"}" colDef.ColumnName colDef.ColumnDataType)) |> String.concat "; ")
+
+            (sprintf "
+HrAdmin.readCollectionFromDb<%s>
+        (ElemCode \"%s\") { 
+            TableName = \"%s\"
+            Columns = %s}" record code tableName columns)
+            
 
     let private elemstatement (elemDefinition: ElemDefinition) =
         let { Code = ElemCode (code) } = elemDefinition
@@ -63,6 +89,9 @@ open LambdaPayroll.Domain
                         let! depsLines = deps |> buildLinesMultipleElems
 
                         return depsLines |> Result.map (append crtLine)
+                    | { Type = DbCollection colElemDef} ->
+                        let recordAccessors = recordAccessorModule elem colElemDef
+                        return Ok([crtLine; recordAccessors])
                     | _ -> return Ok([crtLine])
                 }
             state {
