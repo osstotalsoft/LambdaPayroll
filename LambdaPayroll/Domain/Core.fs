@@ -54,7 +54,8 @@ module PayrollElem =
     let composeK f g x = bind g (f x)
     
     let lift2 f = map f >> apply
-    
+    let lift3 f a = lift2 f a >> apply
+   
     let flatten eff = bind id eff
 
 module PayrollElemBuilder =

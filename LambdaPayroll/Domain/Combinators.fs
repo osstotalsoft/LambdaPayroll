@@ -56,6 +56,8 @@ module HrCombinators =
 
 [<AutoOpen>]
 module NumericCombinators =
+    let inline private _between a b value = (a <= value) && (value <= b)
+
     let inline (+) (a: PayrollElem< ^a > when (^a or ^b): (static member (+): ^a * ^b -> ^c)) (b: PayrollElem< ^b >) =
         PayrollElem.lift2 (+) a b
 
@@ -68,29 +70,32 @@ module NumericCombinators =
     let inline (/) (a: PayrollElem< ^a > when (^a or ^b): (static member (/): ^a * ^b -> ^c)) (b: PayrollElem< ^b >) =
         PayrollElem.lift2 (/) a b
 
-    let inline decimal (a: PayrollElem< ^a > when ^a: (static member op_Explicit: ^a -> decimal)) =
+    let inline decimal a =
         PayrollElem.map (decimal) a
 
     let inline max<'a when ^a: comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) = PayrollElem.lift2 max a b
 
     let inline min<'a when ^a: comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) = PayrollElem.lift2 min a b
 
-    let inline (>) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) = PayrollElem.lift2 (>) a b
+    let inline (>) a b = PayrollElem.lift2 (>) a b
 
-    let inline (>=) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) = PayrollElem.lift2 (>=) a b
+    let inline (>=) a b = PayrollElem.lift2 (>=) a b
 
-    let inline (<) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) = PayrollElem.lift2 (<) a b
+    let inline (<) a b = PayrollElem.lift2 (<) a b
 
-    let inline (<=) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) = PayrollElem.lift2 (<=) a b
+    let inline (<=) a b = PayrollElem.lift2 (<=) a b
 
-    let inline (=) (a: PayrollElem< ^a > when ^a: comparison) (b: PayrollElem< ^a >) = PayrollElem.lift2 (=) a b
+    let inline (=) a b = PayrollElem.lift2 (=) a b
+      
+    let inline between a b value = PayrollElem.lift3 _between a b value
 
     let constant = Payroll.constant
 
-    let ceiling (a: PayrollElem<decimal>) =
-        // fsharplint:disable-next-line
-        PayrollElem.map (fun (d: decimal) -> Math.Ceiling d) a
+    let inline round (a: PayrollElem<_>) =
+        PayrollElem.map round a
 
+    let inline ceiling (a: PayrollElem<_>) =
+        PayrollElem.map ceil a
 
     let inline sum (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a) and ^a: (static member Zero: ^a)): PayrollElem< ^a > =
         xs |> PayrollElem.map List.sum
