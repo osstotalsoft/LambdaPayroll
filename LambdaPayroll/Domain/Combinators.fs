@@ -73,9 +73,10 @@ module NumericCombinators =
     let inline decimal a =
         PayrollElem.map (decimal) a
 
-    let inline max<'a when ^a: comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) = PayrollElem.lift2 max a b
+    let inline minValue<'a when ^a: comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) = PayrollElem.lift2 max a b
 
-    let inline min<'a when ^a: comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) = PayrollElem.lift2 min a b
+    let inline maxValue<'a when ^a: comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) = PayrollElem.lift2 min a b
+
 
     let inline (>) a b = PayrollElem.lift2 (>) a b
 
@@ -103,10 +104,10 @@ module NumericCombinators =
     let inline avg (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a)): PayrollElem< ^a > =
         xs |> PayrollElem.map List.average
 
-    let inline maxItem (xs: PayrollElem< ^a list> when ^a: comparison): PayrollElem< ^a > =
+    let inline max (xs: PayrollElem< ^a list> when ^a: comparison): PayrollElem< ^a > =
         xs |> PayrollElem.map List.max
 
-    let inline minItem (xs: PayrollElem< ^a list> when ^a: comparison): PayrollElem< ^a > =
+    let inline min (xs: PayrollElem< ^a list> when ^a: comparison): PayrollElem< ^a > =
         xs |> PayrollElem.map List.min
 
 [<AutoOpen>]
