@@ -1,5 +1,4 @@
-﻿
-module Generated
+﻿module SamplePayrollScheme
 
 open Core
 open Combinators
@@ -8,106 +7,129 @@ open System
 open NBB.Core.Effects.FSharp
 open LambdaPayroll.Domain
 
-let ContractDeductedPersonsCount = 
-    HrAdmin.readScalarFromDb<Int32> (ElemCode "ContractDeductedPersonsCount") { TableName = "hr.Contract"; ColumnName = "DeductedPersonsCount" }
+//HrAdmin elems
+let salariuBrut =
+    HrAdmin.readScalarFromDb<decimal>
+        (ElemCode "salariuBrut")
+        { TableName = "Salarii"
+          ColumnName = "SalariuBrut" }
 
-let AllContractsDeductedPersonsCount = 
-    from allEmployeeContracts |> select ContractDeductedPersonsCount |> maxItem |> memoize
+let esteContractPrincipal =
+    HrAdmin.readScalarFromDb<bool>
+        (ElemCode "esteContractPrincipal")
+        { TableName = "Salarii"
+          ColumnName = "EsteContractPrincipal" }
 
-let ContractGrossSalary = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "ContractGrossSalary") { TableName = "hr.Contract"; ColumnName = "GrossSalary" }
+let esteActiv =
+    HrAdmin.readScalarFromDb<bool>
+        (ElemCode "esteActiv")
+        { TableName = "Salarii"
+          ColumnName = "EsteActiv" }
 
-let ComputingPeriodWorkingDaysNo = 
-    HrAdmin.readScalarFromDb<Int32> (ElemCode "ComputingPeriodWorkingDaysNo") { TableName = "hr.ComputingPeriod"; ColumnName = "WorkingDaysNo" }
 
-let ContractWorkingDayHours = 
-    HrAdmin.readScalarFromDb<Int32> (ElemCode "ContractWorkingDayHours") { TableName = "hr.Contract"; ColumnName = "WorkingDayHours" }
+//payroll constants
+let procentImpozit = Payroll.constant 0.23456m //|> log "procentImpozit" |> memoize
 
-let HourWage = 
-    ContractGrossSalary / decimal(ComputingPeriodWorkingDaysNo * ContractWorkingDayHours)
 
-let TimesheetTotalWorkedHours = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetTotalWorkedHours") { TableName = "hr.Timesheet"; ColumnName = "TotalWorkedHours" }
+//payroll lazy computed values
+let now =
+    fun _ -> effect { return DateTime.Now |> Ok }
 
-let IncomeForWorkedTime = round(HourWage * TimesheetTotalWorkedHours)
-let TimesheetPayedAbsenceDays = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetPayedAbsenceDays") { TableName = "hr.Timesheet"; ColumnName = "PayedAbsenceDays" }
+//Formula elems
+let nuEsteActiv = not esteActiv
+let esteContractPrincipalSiEsteActiv = esteContractPrincipal && esteActiv
+let esteContractPrincipalSiNuEsteActiv = esteContractPrincipal && not esteActiv
 
-let IncomeForPaidAbsences = 
-    round(HourWage * TimesheetPayedAbsenceDays * decimal(ContractWorkingDayHours))
+let esteContractPrincipalSiEsteActivLunaTrecuta =
+    (esteContractPrincipal && esteActiv) |> lastMonth
 
-let TimesheetTotalWorkedOvertimeHours = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetTotalWorkedOvertimeHours") { TableName = "hr.Timesheet"; ColumnName = "TotalWorkedOvertimeHours" }
+let esteContractPrincipalSiEsteActivAcum2Luni =
+    (esteContractPrincipal && esteActiv)
+    |> lastMonth
+    |> lastMonth
 
-let TimesheetOvertimeHoursFactor = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetOvertimeHoursFactor") { TableName = "hr.Timesheet"; ColumnName = "OvertimeHoursFactor" }
+let esteContractPrincipalSiNuEsteActivAcum2Luni =
+    (esteContractPrincipal && not esteActiv)
+    |> lastMonth
+    |> lastMonth
 
-let IncomeForWorkedOverTime = 
-    round(HourWage * TimesheetTotalWorkedOvertimeHours * TimesheetOvertimeHoursFactor)
+let esteContractPrincipalSiNuEsteActivAcum3Luni =
+    (esteContractPrincipal && not esteActiv)
+    |> (3 |> monthsAgo)
 
-let TotalGrossSalary = 
-    IncomeForWorkedTime + IncomeForPaidAbsences + IncomeForWorkedOverTime
+let esteContractPrincipalSiAreToateContracteleActive =
+    from allEmployeeContracts
+    |> select (esteContractPrincipal && esteActiv)
+    |> all
 
-let baseCAS = max (Payroll.constant 0m) TotalGrossSalary
-let TaxCASPct = 
-    HrAdmin.readScalarFromDb<Int32> (ElemCode "TaxCASPct") { TableName = "hr.Tax"; ColumnName = "CASPct" }
+let esteContractPrincipalSiAreVreunContractInactivLunaTrecuta =
+    from allEmployeeContracts
+    |> select (esteContractPrincipal && not esteActiv)
+    |> lastMonth
+    |> any
 
-let interimCAS = 
-    baseCAS * decimal(TaxCASPct) / (Payroll.constant 100m)
+let esteActivInToateUltimele3Luni =
+    from 3 |> lastMonths |> select esteActiv |> all
 
-let CAS = 
-    When (interimCAS > (Payroll.constant 0m) && interimCAS < (Payroll.constant 1m)) (Payroll.constant 1m) (round interimCAS)
+let mediaSalariuluiBrutInUltimele3LuniActive =
+    from 3
+    |> lastMonths
+    |> where esteActiv
+    |> select salariuBrut
+    |> avg
 
-let TaxCASSPct = 
-    HrAdmin.readScalarFromDb<Int32> (ElemCode "TaxCASSPct") { TableName = "hr.Tax"; ColumnName = "CASSPct" }
+let impozitNerotunjit = procentImpozit * salariuBrut
 
-let interimCASS = 
-    baseCAS * decimal(TaxCASSPct) / (Payroll.constant 100m)
+let sumaImpozitelorNerotunjitePeToateContractele =
+    from allEmployeeContracts
+    |> select impozitNerotunjit
+    |> sum
 
-let CASS = 
-    When (interimCASS > (Payroll.constant 0m) && interimCASS < (Payroll.constant 1m)) (Payroll.constant 1m) (round interimCASS)
+let sumaImpozitelorNerotunjitePeContracteleSecundare =
+    from allEmployeeContracts
+    |> where (not esteContractPrincipal)
+    |> select impozitNerotunjit
+    |> sum
 
-let ContractIsBasePosition = 
-    HrAdmin.readScalarFromDb<Boolean> (ElemCode "ContractIsBasePosition") { TableName = "hr.Contract"; ColumnName = "IsBasePosition" }
+let sumaImpozitelorNerotunjitePeContracteleSecundare' =
+    from allEmployeeContracts
+    |> select (When esteContractPrincipal (constant 0m) impozitNerotunjit)
+    |> sum
 
-let DeductionDeductedPersonsCount = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "DeductionDeductedPersonsCount") { TableName = "hr.Deduction"; ColumnName = "DeductedPersonsCount" }
+let sumaImpozitelorNerotunjitePeContracteleSecundare'' =
+    from allEmployeeContracts
+    |> select
+        (When esteContractPrincipal
+         <| Then(constant 0m)
+         <| Else impozitNerotunjit)
+    |> sum
 
-let DeductionRangeEnd = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "DeductionRangeEnd") { TableName = "hr.Deduction"; ColumnName = "RangeEnd" }
+let impozit =
+    When
+        esteContractPrincipal
+        (ceiling sumaImpozitelorNerotunjitePeToateContractele
+         - sumaImpozitelorNerotunjitePeContracteleSecundare)
+        impozitNerotunjit
 
-let DeductionRangeStart = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "DeductionRangeStart") { TableName = "hr.Deduction"; ColumnName = "RangeStart" }
 
-let DeductionValue = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "DeductionValue") { TableName = "hr.Deduction"; ColumnName = "Value" }
+let impoziteleNerotunjitePeToateContractele =
+    from allEmployeeContracts
+    |> select impozitNerotunjit
 
-let Deductions = 
-    HrAdmin.readCollectionFromDb<{|RangeStart: System.Decimal; RangeEnd: System.Decimal; Value: System.Decimal; DeductedPersonsCount: System.Decimal|}>
-            (ElemCode "Deductions") { 
-                TableName = "hr.Deduction"
-                Columns = [{ColumnName= "RangeStart"; ColumnDataType = "System.Decimal"}; {ColumnName= "RangeEnd"; ColumnDataType = "System.Decimal"}; {ColumnName= "Value"; ColumnDataType = "System.Decimal"}; {ColumnName= "DeductedPersonsCount"; ColumnDataType = "System.Decimal"}]}
+let impozitelePeToateContractele =
+    from allEmployeeContracts |> select impozit
 
-[<AutoOpen>]
-module Deductions =
-    let inline _RangeStart a = PayrollElem.map (fun x -> (^a: (member RangeStart: _) x)) a
-    let inline _RangeEnd a = PayrollElem.map (fun x -> (^a: (member RangeEnd: _) x)) a
-    let inline _Value a = PayrollElem.map (fun x -> (^a: (member Value: _) x)) a
-    let inline _DeductedPersonsCount a = PayrollElem.map (fun x -> (^a: (member DeductedPersonsCount: _) x)) a
+let sumaImpozitelorPeToateContractele =
+    from allEmployeeContracts |> select impozit |> sum
 
-let baseAllContractsDeduction = 
-    from allEmployeeContracts |> where (ContractIsBasePosition) |> select TotalGrossSalary |> sum |>memoize
 
-let baseCASS = max (Payroll.constant 0m) TotalGrossSalary
+let salariuNet = salariuBrut - impozit //|> log "salariuNet" |> memoize
 
-let x = 
-    from Deductions 
-    |> where' (fun d ->  
-        (baseAllContractsDeduction |> between ( d |> _RangeStart)  ( d |> _RangeEnd)) && 
-        ( (d |> _DeductedPersonsCount) = decimal(AllContractsDeductedPersonsCount)))  
-    |> select' _Value 
-    |> maxItem
+let diferentaNetFataDeLunaTrecuta =
+    salariuNet - (salariuNet |> from lastMonth)
 
-let baseCASS = max (Payroll.constant 0m) TotalGrossSalary
+let mediaSalariuluiNetPeUltimele3Luni =
+    from 3 |> lastMonths |> select salariuNet |> avg
 
-let x = TotalGrossSalary - CAS - CASS |> max (constant 0m)
+
+let ultimele3Luni = from 3 |> lastMonths |> select yearMonth
