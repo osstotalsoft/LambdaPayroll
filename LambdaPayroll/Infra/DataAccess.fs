@@ -189,8 +189,8 @@ module DataAccess =
             let { TableName = table; Columns = columnDefs } = definition
             let (ContractId contractId), (YearMonth (year, month)) = context
 
-            let strJoin (separator: string) (values: IEnumerable<string>) = String.Join (separator, values)
-            let columnNames = columnDefs |> List.map (fun def -> def.ColumnName) |> strJoin (", ")
+            
+            let columnNames = columnDefs |> List.map (fun def -> def.ColumnName) |> List.sort |> String.concat (", ")
             let columnCount = columnDefs.Length
 
             let result =

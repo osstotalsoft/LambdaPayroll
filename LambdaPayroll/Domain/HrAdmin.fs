@@ -43,15 +43,13 @@ let readScalarFromDb<'a> (ElemCode code) (dbScalarElemDefinition: DbScalarElemDe
 
 let readCollectionFromDb<'a> (ElemCode code) (dbCollectionElemDefinition: DbCollectionElemDefinition): PayrollElem<'a list> =
     
-    let cast (code: string) (value: 'b) =
-        if isNull value then Error <| sprintf "Value for %s not found in HR DB" code
-        else if typeof<'a> = value.GetType() then Ok(box value :?> 'a)
-        else Error <| sprintf "Invalid elem type for %s (expected %s and received %s)" code (typeof<'a>).Name (value.GetType().Name)
-
+    let cast vals =
+        FSharp.Reflection.FSharpValue.MakeRecord (typeof<'a>, vals) |> unbox<'a>
+        
     fun (contractId, yearMonth) ->
         effect {
             let! result = loadCollection dbCollectionElemDefinition (contractId, yearMonth)
-            return result |> Result.map (List.map (fun vals -> FSharp.Reflection.FSharpValue.MakeRecord (typeof<'a>, vals) |> unbox<'a>))
+            return result |> Result.map (List.map cast)
         }
 
 type GetOtherEmployeeContractsSideEffect =
