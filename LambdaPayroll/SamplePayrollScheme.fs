@@ -142,16 +142,16 @@ let q (deductions:PayrollElem<int list>) =
     }
 
 
-let q' (deductions:PayrollElem<int list>) = 
-    let xxx  = 
-        elem.Select(
-            elem.Where(
-                elem.For(
-                    deductions, 
-                    (fun x -> elem.YieldFrom( x + (constant 1)))
-                ), 
-                (fun x-> x = (constant 0))
-            ),
-            (fun x -> x + (constant 0))
-        )
-    xxx
+// let q' (deductions:PayrollElem<int list>) = 
+//     let xxx  = 
+//         elem.Select(
+//             elem.Where(
+//                 elem.For(
+//                     deductions, 
+//                     (fun x -> elem.YieldFrom( x + (constant 1)))
+//                 ), 
+//                 (fun x-> x = (constant 0))
+//             ),
+//             (fun x -> x + (constant 0))
+//         )
+//     xxx
