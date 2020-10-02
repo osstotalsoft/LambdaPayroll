@@ -28,7 +28,7 @@ let esteActiv =
 
 
 //payroll constants
-let procentImpozit = Payroll.constant 0.23456m //|> log "procentImpozit" |> memoize
+let procentImpozit = constant 0.23456m //|> log "procentImpozit" |> memoize
 
 
 //payroll lazy computed values

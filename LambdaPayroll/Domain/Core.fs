@@ -1,4 +1,4 @@
-﻿module Core
+﻿module rec Core
 
 open NBB.Core.Effects.FSharp
 
@@ -25,6 +25,7 @@ module PayrollElemResult =
     let bind (func: 'a -> PayrollElemResult<'b>) (eff: PayrollElemResult<'a>): PayrollElemResult<'b> =
         effect {
             let! r = eff
+
             match r with
             | Ok x -> return! func x
             | Error err -> return Error err
@@ -62,6 +63,65 @@ module PayrollElem =
 
     let flatten eff = bind id eff
 
+    let forLoop (f: PayrollElem<'a> -> PayrollElem<'b>) (coll: PayrollElem<'a list>): PayrollElem<'b list> =
+        coll
+        |> bind (List.traversePayrollElem (return' >> f))
+
+    let where (predicate: 'a -> PayrollElem<bool>) (coll: PayrollElem<'a list>): PayrollElem<'a list> =
+        let (<*>) = apply
+        let return' = PayrollElem.return'
+        let initState = PayrollElem.return' []
+        let consIf cond head tail = if cond then head :: tail else tail
+
+        let folder (head: 'a) (tail: PayrollElem<'a list>) =
+            return' consIf
+            <*> (predicate head)
+            <*> (return' head)
+            <*> tail
+
+        coll
+        |> bind (fun list -> List.foldBack folder list initState)
+
+    let select (f: 'a -> PayrollElem<'b>) (coll: PayrollElem<'a list>) =
+        coll |> bind (List.traversePayrollElem f)
+
+
+module PayrollElemBuilder =
+    type PayrollElemBuilder() =
+        member _.Bind(eff, func) = eff |> PayrollElem.bind func
+        member _.Return(value) = PayrollElem.return' value
+        member _.ReturnFrom(value) = value
+        member _.Combine(eff1, eff2) = eff1 |> PayrollElem.bind (fun _ -> eff2)
+        member _.Zero() = PayrollElem.return' ()
+        member _.For(coll, f) = coll |> PayrollElem.forLoop f
+        member _.Yield(value) = PayrollElem.return' value
+        member _.YieldFrom(x) = x
+
+        [<CustomOperation("where", MaintainsVariableSpace = true)>]
+        member _.Where(coll, [<ProjectionParameter>] predicate) = coll |> PayrollElem.where predicate
+
+        [<CustomOperation("select")>]
+        member _.Select(coll, [<ProjectionParameter>] f) = coll |> PayrollElem.select f
+
+[<AutoOpen>]
+module PayrollElems =
+    let elem = PayrollElemBuilder.PayrollElemBuilder()
+
+    let (<!>) = PayrollElem.map
+    let (<*>) = PayrollElem.apply
+    let (>>=) eff func = PayrollElem.bind func eff
+    let (>=>) = PayrollElem.composeK
+
+    let constant = PayrollElem.return'
+
+    let eval (elem: PayrollElem<'a>) ctx =
+        effect {
+            let! result = elem ctx
+
+            match result with
+            | Ok a -> return sprintf "%A" a
+            | Error err -> return sprintf "Eroare: %s" err
+        }
 
 [<RequireQualifiedAccess>]
 module List =
@@ -90,63 +150,3 @@ module List =
         List.foldBack folder list initState
 
     let sequencePayrollElemResult list = traversePayrollElemResult id list
-
-module PayrollElemBuilder =
-    type PayrollElemBuilder() =
-        member _.Bind(eff, func) = PayrollElem.bind func eff
-        member _.Return(value) = PayrollElem.return' value
-        member _.ReturnFrom(value) = value
-        member _.Combine(eff1, eff2) = PayrollElem.bind (fun _ -> eff2) eff1
-        member _.Zero() = PayrollElem.return' ()
-
-        member _.For(source: PayrollElem<'a list>, f: PayrollElem<'a> -> PayrollElem<'b>): PayrollElem<'b list> =
-            source
-            |> PayrollElem.bind (List.traversePayrollElem (PayrollElem.return' >> f))
-
-        member _.Yield(value) = PayrollElem.return' value
-        member _.YieldFrom(x) = x
-
-        /// Represents filtering of the source using specified condition
-        // [<CustomOperation("where", MaintainsVariableSpace=true)>]
-        // member _.Where(source: PayrollElem<'a list>, [<ProjectionParameter>] predicate: PayrollElem<'a> -> PayrollElem<bool>): PayrollElem<'a list> = 
-        //     let tuple2 a b = a, b
-        //     source
-        //     |> PayrollElem.bind
-        //         (List.traversePayrollElem (fun b ->
-        //             b
-        //             |> PayrollElem.return'
-        //             |> predicate
-        //             |> PayrollElem.map (tuple2 b)))
-        //     |> PayrollElem.map (List.filter snd >> List.map fst)
-
-        [<CustomOperation("where", MaintainsVariableSpace=true)>]
-        member _.Where(source: PayrollElem<'a list>, [<ProjectionParameter>] predicate: 'a -> PayrollElem<bool>): PayrollElem<'a list> = 
-            source
-            //|> PayrollElem.bind (fun x -> List.filter predicate)
-        [<CustomOperation("select")>]
-        member _.Select(source: PayrollElem<'a list>, [<ProjectionParameter>] f:'a -> PayrollElem<'b>): PayrollElem<'b list>  = 
-            source
-            |> PayrollElem.bind (List.traversePayrollElem f)
-
-[<AutoOpen>]
-module PayrollElems =
-    let elem = PayrollElemBuilder.PayrollElemBuilder()
-
-    let (<!>) = PayrollElem.map
-    let (<*>) = PayrollElem.apply
-    let (>>=) eff func = PayrollElem.bind func eff
-    let (>=>) = PayrollElem.composeK
-
-    let constant = PayrollElem.return'
-
-let eval (elem: PayrollElem<'a>) ctx =
-    effect {
-        let! result = elem ctx
-
-        match result with
-        | Ok a -> return sprintf "%A" a
-        | Error err -> return sprintf "Eroare: %s" err
-    }
-
-module Payroll =
-    let constant = PayrollElem.return'
