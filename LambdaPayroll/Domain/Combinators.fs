@@ -90,8 +90,6 @@ module NumericCombinators =
       
     let inline between a b value = PayrollElem.lift3 _between a b value
 
-    let constant = Payroll.constant
-
     let inline round (a: PayrollElem<_>) =
         PayrollElem.map round a
 
