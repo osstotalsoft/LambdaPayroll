@@ -123,6 +123,9 @@ module PayrollElems =
             | Error err -> return sprintf "Eroare: %s" err
         }
 
+    let (@@) (elem:PayrollElem<'a>) (ctx:PayrollElem<PayrollElemContext>): PayrollElem<'a> =
+        ctx >>= (fun ctx _ -> elem ctx)
+
 [<RequireQualifiedAccess>]
 module List =
     let traversePayrollElem f list =

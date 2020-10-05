@@ -137,8 +137,15 @@ let ultimele3Luni = from 3 |> lastMonths |> select yearMonth
 let q (deductions:PayrollElem<int list>) = 
     elem {
         for x in deductions do
-        where (x = (constant 0))
-        select (x + (constant 0))//fun (x:PayrollElem<int>) -> x > (constant 0)
+        where (x = constant 0)
+        select (x + constant 0)//fun (x:PayrollElem<int>) -> x > (constant 0)
+    }
+
+let qq =
+    elem {
+        for ctx in allEmployeeContracts do
+        where (esteActiv @@ ctx)
+        select (salariuNet @@ ctx)
     }
 
 
