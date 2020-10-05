@@ -63,27 +63,39 @@ module PayrollElem =
 
     let flatten eff = bind id eff
 
-    let forLoop (f: PayrollElem<'a> -> PayrollElem<'b>) (coll: PayrollElem<'a list>): PayrollElem<'b list> =
-        coll
-        |> bind (List.traversePayrollElem (return' >> f))
 
-    let where (predicate: 'a -> PayrollElem<bool>) (coll: PayrollElem<'a list>): PayrollElem<'a list> =
-        let (<*>) = apply
+type PayrollElemList<'a> = PayrollElem<list<'a>>
+
+module PayrollElemList =
+    let map (func: 'a -> 'b) (elemList: PayrollElemList<'a>): PayrollElemList<'b> =
+        elemList |> PayrollElem.map (List.map func)
+
+    let bind (func: 'a -> PayrollElemList<'b>) (elemList: PayrollElemList<'a>): PayrollElemList<'b> =
+        elemList
+        |> PayrollElem.bind
+            ((List.map func)
+             >> List.sequencePayrollElem
+             >> PayrollElem.map List.flatten)
+
+    let return' (x: 'a): PayrollElemList<'a> = PayrollElem.return' [ x ]
+
+    let hoist (list: 'a list): PayrollElem<'a list> = PayrollElem.return' list
+    let lift (elem: PayrollElem<'a>): PayrollElemList<'a> = elem |> PayrollElem.map (fun x -> [ x ])
+
+    let filter (predicate: 'a -> PayrollElem<bool>) (coll: PayrollElemList<'a>): PayrollElemList<'a> =
+        let (<*>) = PayrollElem.apply
         let return' = PayrollElem.return'
-        let initState = PayrollElem.return' []
+        let initState = hoist []
         let consIf cond head tail = if cond then head :: tail else tail
 
-        let folder (head: 'a) (tail: PayrollElem<'a list>) =
+        let folder (head: 'a) (tail: PayrollElemList<'a>) =
             return' consIf
             <*> (predicate head)
             <*> (return' head)
             <*> tail
 
         coll
-        |> bind (fun list -> List.foldBack folder list initState)
-
-    let select (f: 'a -> PayrollElem<'b>) (coll: PayrollElem<'a list>) =
-        coll |> bind (List.traversePayrollElem f)
+        |> PayrollElem.bind (fun list -> List.foldBack folder list initState)
 
 
 module PayrollElemBuilder =
@@ -93,15 +105,24 @@ module PayrollElemBuilder =
         member _.ReturnFrom(value) = value
         member _.Combine(eff1, eff2) = eff1 |> PayrollElem.bind (fun _ -> eff2)
         member _.Zero() = PayrollElem.return' ()
-        member _.For(coll, f) = coll |> PayrollElem.forLoop f
-        member _.Yield(value) = PayrollElem.return' value
+
+        member _.For(coll, f) =
+            coll
+            |> PayrollElemList.bind (PayrollElem.return' >> f)
+
+        member _.Yield(value) = PayrollElemList.lift value
+
         member _.YieldFrom(x) = x
 
         [<CustomOperation("where", MaintainsVariableSpace = true)>]
-        member _.Where(coll, [<ProjectionParameter>] predicate) = coll |> PayrollElem.where predicate
+        member _.Where(coll, [<ProjectionParameter>] predicate) =
+            coll
+            |> PayrollElemList.filter (PayrollElem.return' >> predicate)
 
         [<CustomOperation("select")>]
-        member _.Select(coll, [<ProjectionParameter>] f) = coll |> PayrollElem.select f
+        member _.Select(coll, [<ProjectionParameter>] f) =
+            coll
+            |> PayrollElem.bind (List.traversePayrollElem (PayrollElem.return' >> f))
 
 [<AutoOpen>]
 module PayrollElems =
@@ -123,11 +144,13 @@ module PayrollElems =
             | Error err -> return sprintf "Eroare: %s" err
         }
 
-    let (@@) (elem:PayrollElem<'a>) (ctx:PayrollElem<PayrollElemContext>): PayrollElem<'a> =
+    let (@@) (elem: PayrollElem<'a>) (ctx: PayrollElem<PayrollElemContext>): PayrollElem<'a> =
         ctx >>= (fun ctx _ -> elem ctx)
 
 [<RequireQualifiedAccess>]
 module List =
+    let flatten (listOfLists: list<list<'a>>): list<'a> = listOfLists |> List.collect id
+
     let traversePayrollElem f list =
         let (<*>) = PayrollElem.apply
         let cons head tail = head :: tail
