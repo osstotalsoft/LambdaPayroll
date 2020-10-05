@@ -6,10 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Domain\Common.fs" />
     <Compile Include="Domain\Core.fs" />
     <Compile Include="Domain\ElemCache.fs" />
     <Compile Include="Domain\DefaultPayrollElems.fs" />
-    <Compile Include="Domain\Common.fs" />
     <Compile Include="Domain\ElemDefinitionStoreAggregate.fs" />
     <Compile Include="Domain\HrAdmin.fs" />
     <Compile Include="Domain\Combinators.fs" />

@@ -10,3 +10,8 @@ module Exception =
 
     let throw = Effect.wrap << Effect.Of << ExceptionSideEffect
 
+[<AutoOpen>]
+module ListExtensions =
+    [<RequireQualifiedAccess>]
+    module List =
+        let flatten (listOfLists: list<list<'a>>): list<'a> = listOfLists |> List.collect id

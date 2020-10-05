@@ -1,5 +1,6 @@
 ﻿module rec Core
 
+open LambdaPayroll.Domain
 open NBB.Core.Effects.FSharp
 
 type PayrollElem<'a> = PayrollElemContext -> PayrollElemResult<'a>
@@ -67,6 +68,7 @@ module PayrollElem =
 type PayrollElemList<'a> = PayrollElem<list<'a>>
 
 module PayrollElemList =
+    
     let map (func: 'a -> 'b) (elemList: PayrollElemList<'a>): PayrollElemList<'b> =
         elemList |> PayrollElem.map (List.map func)
 
@@ -81,6 +83,7 @@ module PayrollElemList =
 
     let hoist (list: 'a list): PayrollElem<'a list> = PayrollElem.return' list
     let lift (elem: PayrollElem<'a>): PayrollElemList<'a> = elem |> PayrollElem.map (fun x -> [ x ])
+
 
     let filter (predicate: 'a -> PayrollElem<bool>) (coll: PayrollElemList<'a>): PayrollElemList<'a> =
         let (<*>) = PayrollElem.apply
@@ -149,8 +152,6 @@ module PayrollElems =
 
 [<RequireQualifiedAccess>]
 module List =
-    let flatten (listOfLists: list<list<'a>>): list<'a> = listOfLists |> List.collect id
-
     let traversePayrollElem f list =
         let (<*>) = PayrollElem.apply
         let cons head tail = head :: tail
