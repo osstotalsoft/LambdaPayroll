@@ -144,8 +144,8 @@ let q (deductions:PayrollElem<int list>) =
 let qq =
     elem {
         for ctx in allEmployeeContracts do
-        where (esteActiv @@ ctx)
-        select (salariuNet @@ ctx)
+        where (esteActiv @ ctx)
+        select (salariuNet @ ctx)
     }
 
 
