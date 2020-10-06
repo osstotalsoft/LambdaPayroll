@@ -33,6 +33,7 @@
     <Compile Include="Infra\CodeGeneration.fs" />
     <Compile Include="Infra\InteractiveSession.fs" />
     <Compile Include="SamplePayrollScheme.fs" />
+    <Compile Include="GeneratedPayrollScheme.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
