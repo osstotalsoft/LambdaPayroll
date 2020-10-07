@@ -7,6 +7,7 @@ open DefaultPayrollElems
 open System
 open NBB.Core.Effects.FSharp
 open LambdaPayroll.Domain
+open System.Runtime.CompilerServices
 
 let ContractDeductedPersonsCount = 
     HrAdmin.readScalarFromDb<Int32> (ElemCode "ContractDeductedPersonsCount") { TableName = "hr.Contract"; ColumnName = "DeductedPersonsCount" }
@@ -26,6 +27,18 @@ module Deductions =
     let inline _RangeEnd a = PayrollElem.map (fun x -> (^a: (member RangeEnd: _) x)) a
     let inline _Value a = PayrollElem.map (fun x -> (^a: (member Value: _) x)) a
     let inline _DeductedPersonsCount a = PayrollElem.map (fun x -> (^a: (member DeductedPersonsCount: _) x)) a
+
+    [<Extension>]
+    type DeductionsExtensions =
+        [<Extension>]
+        static member inline RangeStart(a) = PayrollElem.map (fun x -> (^a: (member RangeStart: _) x)) a
+        [<Extension>]
+        static member inline RangeEnd(a) = PayrollElem.map (fun x -> (^a: (member RangeEnd: _) x)) a
+        [<Extension>]
+        static member inline Value(a) = PayrollElem.map (fun x -> (^a: (member Value: _) x)) a
+        [<Extension>]
+        static member inline DeductedPersonsCount(a) = PayrollElem.map (fun x -> (^a: (member DeductedPersonsCount: _) x)) a
+
 
 let ContractIsBasePosition = 
     HrAdmin.readScalarFromDb<Boolean> (ElemCode "ContractIsBasePosition") { TableName = "hr.Contract"; ColumnName = "IsBasePosition" }
@@ -70,10 +83,28 @@ let baseAllContractsDeduction =
 let AllContractsDeduction = 
     from Deductions
         |> where' (fun d ->
-            (baseAllContractsDeduction |> between ( d |> _RangeStart)  ( d |> _RangeEnd)) &&
+            (baseAllContractsDeduction |> between (d |> _RangeStart) ( d |> _RangeEnd)) &&
             ( (d |> _DeductedPersonsCount) = decimal(AllContractsDeductedPersonsCount)))
         |> select' _Value
         |> max
+
+let AllContractsDeduction' = 
+    elem {
+        for d in Deductions do
+        where (baseAllContractsDeduction |> between (d |> _RangeStart) (d |> _RangeEnd))
+        where (d |> _DeductedPersonsCount = decimal AllContractsDeductedPersonsCount)
+        select (d |> _Value)
+    }
+
+let AllContractsDeduction'' = 
+    elem {
+        for d in Deductions do
+        where (baseAllContractsDeduction |> between (d.RangeStart()) (d.RangeEnd()))
+        where (d.DeductedPersonsCount() = decimal AllContractsDeductedPersonsCount)
+        select (d.Value())
+    }
+
+
 
 let baseCAS = TotalGrossSalary |> minValue (constant 0m) 
 let TaxCASPct = 
