@@ -18,7 +18,7 @@ module InteractiveEvalSession =
             cache <- Some session
 
     module InteractiveSession =
-        open Core
+        open ElemAlgebra
         open System.IO
         open System.Text
         open FSharp.Compiler.SourceCodeServices

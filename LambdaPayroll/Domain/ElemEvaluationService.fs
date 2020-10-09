@@ -7,7 +7,7 @@ open NBB.Core.Effects.FSharp.Data.ReaderStateEffect
 open NBB.Core.Effects.FSharp.Data.StateEffect
 open FSharp.Compiler.Interactive.Shell
 open NBB.Core.FSharp.Data
-open Core
+open ElemAlgebra
 
 type ElemStore = ElemStore of System.Reflection.Assembly
 module ElemRepo =
@@ -38,7 +38,7 @@ module ElemEvaluationService =
                let! payrollElemResult = ElemRepo.findPayrollElem (elemStore, elemCode)
 
                match payrollElemResult with
-               | Ok payrollElem -> return! payrollElem elemContext
+               | Ok payrollElem -> return! run payrollElem elemContext
                | Error e -> return Error e
            }
 
@@ -59,7 +59,7 @@ module ElemEvaluationService =
                 let! result = evalToPayrollElem (interactiveEvalSession, expression)
                 return!
                     result 
-                    |> Result.traverseEffect (fun payrollElem -> payrollElem elemContext)
+                    |> Result.traverseEffect (fun payrollElem -> run payrollElem elemContext)
                     |> Effect.map Result.join
             }
 

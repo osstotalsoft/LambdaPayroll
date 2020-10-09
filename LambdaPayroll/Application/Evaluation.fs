@@ -2,7 +2,7 @@
 
 open NBB.Core.Abstractions
 open NBB.Core.Effects.FSharp
-open Core
+open ElemAlgebra
 open LambdaPayroll.Domain
 
 open LambdaPayroll.Application.InfraEffects

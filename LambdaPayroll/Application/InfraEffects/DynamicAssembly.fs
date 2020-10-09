@@ -3,7 +3,7 @@ namespace LambdaPayroll.Application.InfraEffects
 open NBB.Core.Effects
 open NBB.Core.Effects.FSharp
 open System.Reflection
-open Core
+open ElemAlgebra
 
 type DynamicAssembly = DynamicAssembly of Assembly
 

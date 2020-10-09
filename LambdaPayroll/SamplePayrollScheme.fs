@@ -1,6 +1,6 @@
 ﻿module SamplePayrollScheme
 
-open Core
+open ElemAlgebra
 open Combinators
 open DefaultPayrollElems
 open System
@@ -33,7 +33,7 @@ let procentImpozit = constant 0.23456m //|> log "procentImpozit" |> memoize
 
 //payroll lazy computed values
 let now =
-    fun _ -> effect { return DateTime.Now |> Ok }
+    PayrollElem.fromElemResult (effect { return DateTime.Now |> Ok })
 
 //Formula elems
 let nuEsteActiv = not esteActiv
@@ -134,29 +134,29 @@ let mediaSalariuluiNetPeUltimele3Luni =
 
 let ultimele3Luni = from 3 |> lastMonths |> select yearMonth
 
-let q (deductions:PayrollElem<int list>) = 
+let q (deductions: PayrollElem<int list>) =
     elem {
         for x in deductions do
-        where (x = constant 0)
-        select (x + constant 0)//fun (x:PayrollElem<int>) -> x > (constant 0)
+            where (x = constant 0)
+            select (x + constant 0) //fun (x:PayrollElem<int>) -> x > (constant 0)
     }
 
 let qq =
     elem {
         for ctx in allEmployeeContracts do
-        where (esteActiv @ ctx)
-        select (salariuNet @ ctx)
+            where (esteActiv @ ctx)
+            select (salariuNet @ ctx)
     }
 
 
-// let q' (deductions:PayrollElem<int list>) = 
-//     let xxx  = 
+// let q' (deductions:PayrollElem<int list>) =
+//     let xxx  =
 //         elem.Select(
 //             elem.Where(
 //                 elem.For(
-//                     deductions, 
+//                     deductions,
 //                     (fun x -> elem.YieldFrom( x + (constant 1)))
-//                 ), 
+//                 ),
 //                 (fun x-> x = (constant 0))
 //             ),
 //             (fun x -> x + (constant 0))

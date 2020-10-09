@@ -1,10 +1,9 @@
-﻿module rec Core
+﻿module rec ElemAlgebra
 
 open LambdaPayroll.Domain
 open NBB.Core.Effects.FSharp
 
-type PayrollElem<'a> = PayrollElemContext -> PayrollElemResult<'a>
-
+type PayrollElem<'a> = PayrollElem of (PayrollElemContext -> PayrollElemResult<'a>)
 and PayrollElemContext = ContractId * YearMonth
 
 and ContractId = ContractId of int
@@ -19,6 +18,8 @@ module YearMonth =
     let subStractMonth (n: int) (YearMonth (year, month)) = YearMonth(year, month - n)
 
 module PayrollElemResult =
+    
+
     let map (func: 'a -> 'b) (eff: PayrollElemResult<'a>): PayrollElemResult<'b> =
         eff
         |> Effect.map (fun result -> result |> Result.map func)
@@ -44,18 +45,22 @@ module PayrollElemResult =
     let flatten eff = bind id eff
 
 module PayrollElem =
-    let map (func: 'a -> 'b) (eff: PayrollElem<'a>): PayrollElem<'b> =
-        fun ctx -> eff ctx |> PayrollElemResult.map func
+    let run (PayrollElem elem) = elem
+    let fromElemResult r = PayrollElem(fun _ -> r)
+    let fromResult r = r |> Effect.pure' |> fromElemResult
+    let map (func: 'a -> 'b) (elem: PayrollElem<'a>): PayrollElem<'b> =
+        PayrollElem(run elem >> PayrollElemResult.map func)
 
     let bind (func: 'a -> PayrollElem<'b>) (eff: PayrollElem<'a>): PayrollElem<'b> =
-        fun ctx ->
-            eff ctx
-            |> PayrollElemResult.bind (fun a -> func a ctx)
+        PayrollElem(fun ctx ->
+            run eff ctx
+            |> PayrollElemResult.bind (fun a -> run (func a) ctx))
 
     let apply (func: PayrollElem<'a -> 'b>) (eff: PayrollElem<'a>) =
         bind (fun a -> func |> map (fun fn -> fn a)) eff
 
-    let return' (x: 'a): PayrollElem<'a> = fun _ctx -> PayrollElemResult.return' x
+    let return' (x: 'a): PayrollElem<'a> =
+        PayrollElem(fun _ -> PayrollElemResult.return' x)
 
     let composeK f g x = bind g (f x)
 
@@ -64,11 +69,11 @@ module PayrollElem =
 
     let flatten eff = bind id eff
 
+    let ask = PayrollElem PayrollElemResult.return'
 
 type PayrollElemList<'a> = PayrollElem<list<'a>>
 
 module PayrollElemList =
-    
     let map (func: 'a -> 'b) (elemList: PayrollElemList<'a>): PayrollElemList<'b> =
         elemList |> PayrollElem.map (List.map func)
 
@@ -140,15 +145,17 @@ module PayrollElems =
 
     let eval (elem: PayrollElem<'a>) ctx =
         effect {
-            let! result = elem ctx
+            let! result = run elem ctx
 
             match result with
             | Ok a -> return sprintf "%A" a
             | Error err -> return sprintf "Eroare: %s" err
         }
 
+    let run = PayrollElem.run
+
     let (@) (elem: PayrollElem<'a>) (ctx: PayrollElem<PayrollElemContext>): PayrollElem<'a> =
-        ctx >>= (fun ctx _ -> elem ctx)
+        ctx >>= (run elem >> PayrollElem.fromElemResult)
 
 [<RequireQualifiedAccess>]
 module List =
