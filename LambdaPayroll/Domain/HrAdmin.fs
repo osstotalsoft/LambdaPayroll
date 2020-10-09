@@ -1,6 +1,6 @@
 ﻿module HrAdmin
 
-open Core
+open ElemAlgebra
 open NBB.Core.Effects.FSharp
 open LambdaPayroll.Domain
 open NBB.Core.Effects
@@ -10,47 +10,59 @@ type LoadScalarSideEffect =
       Context: PayrollElemContext }
     interface ISideEffect<Result<obj, string>>
 
-let loadScalar definition (contractId, yearMonth) =
-    (Effect.Of
-        { Definition = definition
-          Context = (contractId, yearMonth) })
-    |> Effect.wrap
+let loadScalar definition: PayrollElem<obj> =
+    PayrollElem(fun ctx ->
+        (Effect.Of
+            { Definition = definition
+              Context = ctx })
+        |> Effect.wrap)
 
 type LoadCollectionSideEffect =
     { Definition: DbCollectionElemDefinition
       Context: PayrollElemContext }
-    interface ISideEffect<Result<obj[] list, string>>
+    interface ISideEffect<Result<obj [] list, string>>
 
-let loadCollection<'a> definition (contractId, yearMonth) : Effect<Result<obj[] list, string>> =
-    (Effect.Of
-        { Definition = definition
-          Context = (contractId, yearMonth) })
-    |> Effect.wrap
+let loadCollection<'a> definition: PayrollElem<obj [] list> =
+    PayrollElem(fun ctx ->
+        (Effect.Of
+            { Definition = definition
+              Context = ctx })
+        |> Effect.wrap)
 
 
 let readScalarFromDb<'a> (ElemCode code) (dbScalarElemDefinition: DbScalarElemDefinition): PayrollElem<'a> =
-    
     let cast (code: string) (value: 'b) =
-        if isNull value then Error <| sprintf "Value for %s not found in HR DB" code
-        else if typeof<'a> = value.GetType() then Ok(box value :?> 'a)
-        else Error <| sprintf "Invalid elem type for %s (expected %s and received %s)" code (typeof<'a>).Name (value.GetType().Name)
+        if isNull value then
+            Error
+            <| sprintf "Value for %s not found in HR DB" code
+        else if typeof<'a> = value.GetType() then
+            Ok(box value :?> 'a)
+        else
+            Error
+            <| sprintf
+                "Invalid elem type for %s (expected %s and received %s)"
+                   code
+                   (typeof<'a>).Name
+                   (value.GetType().Name)
 
-    fun (contractId, yearMonth) ->
-        effect {
-            let! result = loadScalar dbScalarElemDefinition (contractId, yearMonth)
-            return result |> Result.bind (cast code)
-        }
+    elem {
+        let! x = loadScalar dbScalarElemDefinition
+        return! cast code x |> PayrollElem.fromResult
+    }
 
-let readCollectionFromDb<'a> (ElemCode code) (dbCollectionElemDefinition: DbCollectionElemDefinition): PayrollElem<'a list> =
-    
+let readCollectionFromDb<'a> (ElemCode code)
+                             (dbCollectionElemDefinition: DbCollectionElemDefinition)
+                             : PayrollElem<'a list> =
+
     let cast vals =
-        FSharp.Reflection.FSharpValue.MakeRecord (typeof<'a>, vals) |> unbox<'a>
-        
-    fun (contractId, yearMonth) ->
-        effect {
-            let! result = loadCollection dbCollectionElemDefinition (contractId, yearMonth)
-            return result |> Result.map (List.map cast)
-        }
+        FSharp.Reflection.FSharpValue.MakeRecord(typeof<'a>, vals)
+        |> unbox<'a>
+
+    elem {
+        let! list = loadCollection dbCollectionElemDefinition
+        return List.map cast list
+    }
+
 
 type GetOtherEmployeeContractsSideEffect =
     | GetOtherEmployeeContractsSideEffect of contractId: ContractId
@@ -66,5 +78,5 @@ type GetAllEmployeeContractsSideEffect =
     interface ISideEffect<ContractId list>
 
 let getAllEmployeeContracts contractId yearMonth =
-    Effect.Of(GetAllEmployeeContractsSideEffect (contractId, yearMonth))
+    Effect.Of(GetAllEmployeeContractsSideEffect(contractId, yearMonth))
     |> Effect.wrap

@@ -1,6 +1,6 @@
 ﻿module ElemCache
 
-open Core
+open ElemAlgebra
 open NBB.Core.Effects.FSharp
 open System.Collections.Generic
 
@@ -21,29 +21,28 @@ open System.Collections.Generic
 
 type CacheKey = {
     ElemCode: int
-    ContractId: ContractId
-    YearMonth: YearMonth
+    Context: PayrollElemContext
 }
 module CacheKey =
-    let create elem contractId yearMonth = 
+    let create elem (ctx: PayrollElemContext) = 
         let boxed = box elem
         let elemCode = boxed.GetHashCode ()
-        {ElemCode=elemCode; ContractId=contractId; YearMonth=yearMonth}
+        {ElemCode=elemCode; Context = ctx}
 
 let private cache = new Dictionary<CacheKey, obj>()
 
-let get (elem:PayrollElem<'a>) contractId yearMonth: Effect<Result<'a, string> option> = 
+let get (elem:PayrollElem<'a>) (ctx: PayrollElemContext): Effect<Result<'a, string> option> = 
     effect {
-        let key = CacheKey.create  elem contractId yearMonth
+        let key = CacheKey.create elem ctx
         let found, value = cache.TryGetValue key
         if found 
         then return Some (value:?> Result<'a, string>)
         else return None
     }
 
-let set (elem:PayrollElem<'a>) contractId yearMonth (value:Result<'a, string>): Effect<unit> = 
+let set (elem:PayrollElem<'a>) (ctx: PayrollElemContext) (value:Result<'a, string>): Effect<unit> = 
     effect {
-        let key = CacheKey.create  elem contractId yearMonth
+        let key = CacheKey.create  elem ctx
         cache.Add(key, value:> obj)
     }
     

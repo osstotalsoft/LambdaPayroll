@@ -2,7 +2,7 @@ namespace LambdaPayroll.Application.InfraEffects
 
 open NBB.Core.Effects
 open NBB.Core.Effects.FSharp
-open Core
+open ElemAlgebra
 
 module FormulaParsingService =
     type GetFormulaDepsSideEffect =

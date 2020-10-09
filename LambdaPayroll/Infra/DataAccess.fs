@@ -5,7 +5,7 @@ open LambdaPayroll.Domain
 
 module DataAccess =
     open System.Data.SqlClient
-    open Core
+    open ElemAlgebra
 
     let unboxOption<'a> (o: obj): 'a option =
         if (isNull o) || DBNull.Value.Equals o then None else Some(unbox o)
@@ -148,6 +148,7 @@ module DataAccess =
                     | DbScalar dbElemDefinition -> insertDbElemDefinition dbElemDefinition elemDefinitionId
                     | Formula formulaElemDefinition ->
                         insertFormulaElemDefinition formulaElemDefinition elemDefinitionId
+                    | DbCollection _ -> failwith "Not implemented"
                 | ElemDefinitionStoreCreated _ -> ()
 
             let (ElemDefinitionStoreRepo.SaveElemDefinitionStoreSideEffect (_store, events)) = sideEffect
@@ -157,7 +158,7 @@ module DataAccess =
     module DbElemValue =
         open System.Collections.Generic
         open System.Data.SqlClient
-        open Core
+        open ElemAlgebra
 
         let loadScalar (connectionString: string)
                       ({ Definition = definition; Context = context }: HrAdmin.LoadScalarSideEffect)
@@ -168,12 +169,13 @@ module DataAccess =
             let { TableName = table; ColumnName = column } = definition
             let (ContractId contractId), (YearMonth (year, month)) = context
 
+            let query = sprintf
+                            "SELECT TOP 1 %s FROM %s WHERE ContractId=@ContractId AND Month=@Month AND Year=@Year"
+                            column
+                            table
             let result =
                 executeCommand
-                    (sprintf
-                        "SELECT TOP 1 %s FROM %s WHERE ContractId=@ContractId AND Month=@Month AND Year=@Year"
-                         column
-                         table)
+                    query
                     [ "@ContractId", box contractId
                       "@Month", box month
                       "@Year", box year ]

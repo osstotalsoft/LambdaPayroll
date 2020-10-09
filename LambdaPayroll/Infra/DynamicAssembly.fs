@@ -1,6 +1,6 @@
 ﻿namespace LambdaPayroll.Infra
 
-open Core
+open ElemAlgebra
 open LambdaPayroll.Domain
 open LambdaPayroll.Application.InfraEffects
 open System.Reflection

@@ -1,7 +1,7 @@
 
 module Generated1
 
-open Core
+open ElemAlgebra
 open Combinators
 open DefaultPayrollElems
 open System

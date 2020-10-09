@@ -1,5 +1,5 @@
 ﻿// Learn more about F# at http://fsharp.org
-open Core
+open ElemAlgebra
 open SamplePayrollScheme
 open NBB.Core.Effects.FSharp
 open System

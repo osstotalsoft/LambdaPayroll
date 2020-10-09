@@ -2,34 +2,37 @@
 
 #nowarn "86"
 
-open System
 open NBB.Core.Effects.FSharp
-open Core
+open ElemAlgebra
 
 
 [<AutoOpen>]
 module HrCombinators =
     let lastMonth (elem: PayrollElem<'a>): PayrollElem<'a> =
-        fun (contractId, yearMonth) -> elem (contractId, (YearMonth.lastMonth yearMonth))
+        PayrollElem(fun (contractId, yearMonth) -> 
+            run elem (contractId, (YearMonth.lastMonth yearMonth))
+        )
 
     let monthsAgo (n: int) (elem: PayrollElem<'a>): PayrollElem<'a> =
-        fun (contractId, yearMonth) -> elem (contractId, (YearMonth.subStractMonth n yearMonth))
+        PayrollElem(fun (contractId, yearMonth) -> 
+            run elem (contractId, (YearMonth.subStractMonth n yearMonth))
+    )
 
     let lastMonths (n: int): PayrollElem<PayrollElemContext list> =
-        fun (contractId, yearMonth) ->
+        PayrollElem(fun (contractId, yearMonth) ->
             [ 0 .. n - 1 ]
             |> List.map (fun x ->
                 let yearMonth' = YearMonth.subStractMonth x yearMonth
                 let ctx = (contractId, yearMonth')
                 PayrollElemResult.return' ctx)
-            |> List.sequencePayrollElemResult
+            |> List.sequencePayrollElemResult)
 
     let inMonth (yearMonth: YearMonth) (elem: PayrollElem<'a>): PayrollElem<'a> =
-        fun (contractId, _yearMonth) -> elem (contractId, yearMonth)
+        PayrollElem(fun (contractId, _yearMonth) -> run elem (contractId, yearMonth))
 
 
     let otherEmployeeContracts: PayrollElem<PayrollElemContext list> =
-        fun (contractId, yearMonth) ->
+        PayrollElem(fun (contractId, yearMonth) ->
             effect {
                 let! otherContracts = HrAdmin.getOtherEmployeeContracts contractId
 
@@ -39,10 +42,10 @@ module HrCombinators =
                     |> PayrollElemResult.return'
 
                 return! otherContractsElemResults
-            }
+            })
 
     let allEmployeeContracts: PayrollElem<PayrollElemContext list> =
-        fun (contractId, yearMonth) ->
+        PayrollElem(fun (contractId, yearMonth) ->
             effect {
                 let! allContracts = HrAdmin.getAllEmployeeContracts contractId yearMonth
 
@@ -52,7 +55,7 @@ module HrCombinators =
                     |> PayrollElemResult.return'
 
                 return! allContractsElemResults
-            }
+            })
 
 [<AutoOpen>]
 module NumericCombinators =
@@ -70,12 +73,13 @@ module NumericCombinators =
     let inline (/) (a: PayrollElem< ^a > when (^a or ^b): (static member (/): ^a * ^b -> ^c)) (b: PayrollElem< ^b >) =
         PayrollElem.lift2 (/) a b
 
-    let inline decimal a =
-        PayrollElem.map (decimal) a
+    let inline decimal a = PayrollElem.map (decimal) a
 
-    let inline minValue<'a when ^a: comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) = PayrollElem.lift2 max a b
+    let inline minValue<'a when ^a: comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) =
+        PayrollElem.lift2 max a b
 
-    let inline maxValue<'a when ^a: comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) = PayrollElem.lift2 min a b
+    let inline maxValue<'a when ^a: comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) =
+        PayrollElem.lift2 min a b
 
 
     let inline (>) a b = PayrollElem.lift2 (>) a b
@@ -87,26 +91,23 @@ module NumericCombinators =
     let inline (<=) a b = PayrollElem.lift2 (<=) a b
 
     let inline (=) a b = PayrollElem.lift2 (=) a b
-      
+
     let inline between a b value = PayrollElem.lift3 _between a b value
 
-    let inline round (a: PayrollElem<_>) =
-        PayrollElem.map round a
+    let inline round (a: PayrollElem<_>) = PayrollElem.map round a
 
-    let inline ceiling (a: PayrollElem<_>) =
-        PayrollElem.map ceil a
+    let inline ceiling (a: PayrollElem<_>) = PayrollElem.map ceil a
 
-    let inline sum (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a) and ^a: (static member Zero: ^a)): PayrollElem< ^a > =
+    let inline sum (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a) and ^a: (static member Zero: ^a))
+                   : PayrollElem< ^a > =
         xs |> PayrollElem.map List.sum
 
     let inline avg (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a)): PayrollElem< ^a > =
         xs |> PayrollElem.map List.average
 
-    let inline max (xs: PayrollElem< ^a list> when ^a: comparison): PayrollElem< ^a > =
-        xs |> PayrollElem.map List.max
+    let inline max (xs: PayrollElem< ^a list> when ^a: comparison): PayrollElem< ^a > = xs |> PayrollElem.map List.max
 
-    let inline min (xs: PayrollElem< ^a list> when ^a: comparison): PayrollElem< ^a > =
-        xs |> PayrollElem.map List.min
+    let inline min (xs: PayrollElem< ^a list> when ^a: comparison): PayrollElem< ^a > = xs |> PayrollElem.map List.min
 
 [<AutoOpen>]
 module BooleanCombinators =
@@ -127,7 +128,7 @@ module BooleanCombinators =
 
 [<AutoOpen>]
 module UtilityCombinators =
-    let log elemCode (elem: PayrollElem<'a>) =
+    let log elemCode (PayrollElem elem: PayrollElem<'a>) =
         fun ((ContractId contractId), (YearMonth (year, month))) ->
             effect {
                 printfn
@@ -139,29 +140,29 @@ module UtilityCombinators =
                 return! elem ((ContractId contractId), (YearMonth(year, month)))
             }
 
-    let memoize (elem: PayrollElem<'a>) =
-        fun ((ContractId contractId), (YearMonth (year, month))) ->
-
+    let memoize (elem: PayrollElem<'a>): PayrollElem<'a> =
+        PayrollElem(fun (ctx: PayrollElemContext) ->
             effect {
-                let! cachedValue = ElemCache.get elem (ContractId contractId) (YearMonth(year, month))
+                let! cachedValue = ElemCache.get elem ctx
 
                 if cachedValue.IsSome then
                     return cachedValue.Value
                 else
-                    let! value = elem ((ContractId contractId), (YearMonth(year, month)))
-                    do! ElemCache.set elem (ContractId contractId) (YearMonth(year, month)) value
+                    let! value = run elem ctx
+                    do! ElemCache.set elem ctx value
                     return value
-            }
+            })
 
 [<AutoOpen>]
 module QueryCombinators =
     let from = id
 
     let select (selector: PayrollElem<'a>) (source: PayrollElem<PayrollElemContext list>): PayrollElem<'a list> =
-        source
-        >> PayrollElemResult.bind
-            (List.map selector
-             >> List.sequencePayrollElemResult)
+        PayrollElem
+            (run source
+             >> PayrollElemResult.bind
+                 (List.map (run selector)
+                  >> List.sequencePayrollElemResult))
 
     let select' (selector: PayrollElem<'a> -> PayrollElem<'b>) (source: PayrollElem<'a list>): PayrollElem<'b list> =
         source
@@ -173,17 +174,17 @@ module QueryCombinators =
     let where (predicate: PayrollElem<bool>)
               (source: PayrollElem<PayrollElemContext list>)
               : PayrollElem<PayrollElemContext list> =
-        fun (ctx: PayrollElemContext) ->
+        PayrollElem(fun (ctx: PayrollElemContext) ->
             let mapping =
                 fun ctx' ->
-                    predicate ctx'
+                    run predicate ctx'
                     |> PayrollElemResult.map (fun b -> (ctx', b))
 
             ctx
-            |> source
+            |> run source
             |> (List.map >> PayrollElemResult.map) mapping
             |> PayrollElemResult.bind List.sequencePayrollElemResult
-            |> PayrollElemResult.map (List.filter snd >> List.map fst)
+            |> PayrollElemResult.map (List.filter snd >> List.map fst))
 
     let where' (predicate: PayrollElem<'a> -> PayrollElem<bool>) (source: PayrollElem<'a list>): PayrollElem<'a list> =
         let tuple2 a b = a, b

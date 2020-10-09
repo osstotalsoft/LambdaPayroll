@@ -1,19 +1,18 @@
 ﻿
 module DefaultPayrollElems
 
-open Core
-open NBB.Core.Effects.FSharp
+open ElemAlgebra
 open System
 
 //default elems
 let daysInMonth: PayrollElem<int> =
-    fun ((ContractId _contractId), (YearMonth (year, month))) ->
-        effect {
-            return Result.Ok <| DateTime.DaysInMonth (year, month)
-        }
+    elem {
+        let! (_, (YearMonth (year, month))) = PayrollElem.ask
+        return DateTime.DaysInMonth (year, month)
+    }
 
 let yearMonth: PayrollElem<YearMonth> =
-    fun ((ContractId _contractId), (YearMonth (year, month))) ->
-        effect {
-            return Result.Ok <| (YearMonth (year, month))
-        }
+    elem {
+        let! (_, yearMonth) = PayrollElem.ask
+        return yearMonth
+    }

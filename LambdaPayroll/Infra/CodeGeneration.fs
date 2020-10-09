@@ -65,7 +65,7 @@ HrAdmin.readCollectionFromDb<%s>
     let private header = "
 module Generated
 
-open Core
+open ElemAlgebra
 open Combinators
 open DefaultPayrollElems
 open System
