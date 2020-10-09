@@ -148,6 +148,7 @@ module DataAccess =
                     | DbScalar dbElemDefinition -> insertDbElemDefinition dbElemDefinition elemDefinitionId
                     | Formula formulaElemDefinition ->
                         insertFormulaElemDefinition formulaElemDefinition elemDefinitionId
+                    | DbCollection _ -> failwith "Not implemented"
                 | ElemDefinitionStoreCreated _ -> ()
 
             let (ElemDefinitionStoreRepo.SaveElemDefinitionStoreSideEffect (_store, events)) = sideEffect
