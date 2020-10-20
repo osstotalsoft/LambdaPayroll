@@ -111,8 +111,10 @@ module PayrollElemList =
     let hoist (list: 'a list): PayrollElem<'a list> = PayrollElem.return' list
     let lift (elem: PayrollElem<'a>): PayrollElemList<'a> = elem |> PayrollElem.map (fun x -> [ x ])
 
+    let filter (predicate: 'a -> bool) (coll: PayrollElemList<'a>): PayrollElemList<'a> =
+        coll |> PayrollElem.map (List.filter predicate)
 
-    let filter (predicate: 'a -> PayrollElem<bool>) (coll: PayrollElemList<'a>): PayrollElemList<'a> =
+    let filterElem (predicate: 'a -> PayrollElem<bool>) (coll: PayrollElemList<'a>): PayrollElemList<'a> =
         let (<*>) = PayrollElem.apply
         let return' = PayrollElem.return'
         let initState = hoist []
@@ -153,21 +155,31 @@ module PayrollElemBuilder =
 
         member _.For(coll, f) =
             coll
-            |> PayrollElemList.bind (PayrollElem.return' >> f)
+            |> PayrollElemList.bind f
 
-        member _.Yield(value) = PayrollElemList.lift value
+        member _.Yield(value) = PayrollElemList.return' value//PayrollElemList.lift value
 
         member _.YieldFrom(x) = x
 
         [<CustomOperation("where", MaintainsVariableSpace = true)>]
         member _.Where(coll, [<ProjectionParameter>] predicate) =
             coll
-            |> PayrollElemList.filter (PayrollElem.return' >> predicate)
+            |> PayrollElemList.filter predicate
+
+        [<CustomOperation("where'", MaintainsVariableSpace = true)>]
+        member _.WhereElem(coll, [<ProjectionParameter>] predicate) =
+            coll
+            |> PayrollElemList.filterElem predicate
 
         [<CustomOperation("select")>]
         member _.Select(coll, [<ProjectionParameter>] f) =
             coll
-            |> PayrollElem.bind (PayrollElemList.traverse (PayrollElem.return' >> f))
+            |> PayrollElemList.map f
+
+        [<CustomOperation("select'")>]
+        member _.SelectElem(coll, [<ProjectionParameter>] f) =
+            coll
+            |> PayrollElem.bind (PayrollElemList.traverse f)
 
 [<AutoOpen>]
 module PayrollElems =
@@ -191,8 +203,8 @@ module PayrollElems =
 
     
 
-    let (@) (elem: PayrollElem<'a>) (ctx: PayrollElem<PayrollElemContext>): PayrollElem<'a> =
-        ctx >>= (run elem >> PayrollElem.fromElemResult)
+    let (@) (elem: PayrollElem<'a>) (ctx: PayrollElemContext): PayrollElem<'a> =
+        PayrollElem(fun _ -> run elem ctx)
 
 
 [<AutoOpen>]

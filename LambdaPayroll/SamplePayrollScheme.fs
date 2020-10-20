@@ -134,31 +134,26 @@ let mediaSalariuluiNetPeUltimele3Luni =
 
 let ultimele3Luni = from 3 |> lastMonths |> select yearMonth
 
-let q (deductions: PayrollElem<int list>) =
+let q (deductions: PayrollElem<{|RangeStart: System.Decimal; RangeEnd: System.Decimal; Value: System.Decimal; DeductedPersonsCount: System.Decimal|} list>) =
     elem {
-        for x in deductions do
-        where (x .= constant 0)
-        select (x + constant 0) //fun (x:PayrollElem<int>) -> x > (constant 0)
+        let! x = mediaSalariuluiNetPeUltimele3Luni
+        for d in deductions do
+        where (d.DeductedPersonsCount > x)
+        select d.Value
     }
 
 let qq =
     elem {
-        for ctx in allEmployeeContracts do
-        where (esteActiv @ ctx)
-        select (salariuNet @ ctx)
+        for contract in allEmployeeContracts do
+        let! esteActiv = esteActiv @ contract
+        where esteActiv
+        let! sn = salariuNet @ contract
+        select sn
     }
 
-
-// let q' (deductions:PayrollElem<int list>) =
-//     let xxx  =
-//         elem.Select(
-//             elem.Where(
-//                 elem.For(
-//                     deductions,
-//                     (fun x -> elem.YieldFrom( x + (constant 1)))
-//                 ),
-//                 (fun x-> x = (constant 0))
-//             ),
-//             (fun x -> x + (constant 0))
-//         )
-//     xxx
+let qq' =
+    elem {
+        for contract in allEmployeeContracts do
+        where' (esteActiv @ contract)
+        select' (salariuNet @ contract)
+    }
