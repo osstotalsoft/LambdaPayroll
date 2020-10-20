@@ -1,25 +1,19 @@
-﻿module rec ElemAlgebra
+﻿module ElemAlgebra
 
 open LambdaPayroll.Domain
 open NBB.Core.Effects.FSharp
 
 type PayrollElem<'a> = PayrollElem of (PayrollElemContext -> PayrollElemResult<'a>)
 and PayrollElemContext = ContractId * YearMonth
-
 and ContractId = ContractId of int
-
 and YearMonth = YearMonth of year: int * month: int
-
 and PayrollElemResult<'a> = Effect<Result<'a, string>>
-
 
 module YearMonth =
     let lastMonth (YearMonth (year, month)) = YearMonth(year, month - 1)
     let subStractMonth (n: int) (YearMonth (year, month)) = YearMonth(year, month - n)
 
 module PayrollElemResult =
-    
-
     let map (func: 'a -> 'b) (eff: PayrollElemResult<'a>): PayrollElemResult<'b> =
         eff
         |> Effect.map (fun result -> result |> Result.map func)
@@ -71,17 +65,45 @@ module PayrollElem =
 
     let ask = PayrollElem PayrollElemResult.return'
 
+type PayrollElem<'a> with
+    static member inline (+) (a, b) = PayrollElem.lift2 (+) a b
+    static member inline (-) (a, b) = PayrollElem.lift2 (-) a b
+    static member inline (*) (a, b) = PayrollElem.lift2 (*) a b
+    static member inline (/) (a, b) = PayrollElem.lift2 (/) a b
+    static member inline (.>) (a, b) = PayrollElem.lift2 (>) a b
+    static member inline (.>=) (a, b) = PayrollElem.lift2 (>=) a b
+    static member inline (.<) (a, b) = PayrollElem.lift2 (<) a b
+    static member inline (.<=) (a, b) = PayrollElem.lift2 (<=) a b
+    static member inline (.=) (a, b) = PayrollElem.lift2 (=) a b
+    static member inline Round(a) = PayrollElem.map round a
+    static member inline Ceiling (a) = PayrollElem.map ceil a
+    static member inline (.&&) (a, b) = PayrollElem.lift2 (&&) a b
+    static member inline (.||) (a,b) = PayrollElem.lift2 (||) a b
+
 type PayrollElemList<'a> = PayrollElem<list<'a>>
 
+[<RequireQualifiedAccess>]
 module PayrollElemList =
     let map (func: 'a -> 'b) (elemList: PayrollElemList<'a>): PayrollElemList<'b> =
         elemList |> PayrollElem.map (List.map func)
+
+    let traverse f list =
+        let (<*>) = PayrollElem.apply
+        let cons head tail = head :: tail
+        let initState = PayrollElem.return' []
+
+        let folder head tail =
+            PayrollElem.return' cons <*> (f head) <*> tail
+
+        List.foldBack folder list initState
+
+    let sequence list = traverse id list
 
     let bind (func: 'a -> PayrollElemList<'b>) (elemList: PayrollElemList<'a>): PayrollElemList<'b> =
         elemList
         |> PayrollElem.bind
             ((List.map func)
-             >> List.sequencePayrollElem
+             >> sequence
              >> PayrollElem.map List.flatten)
 
     let return' (x: 'a): PayrollElemList<'a> = PayrollElem.return' [ x ]
@@ -105,6 +127,21 @@ module PayrollElemList =
         coll
         |> PayrollElem.bind (fun list -> List.foldBack folder list initState)
 
+[<RequireQualifiedAccess>]
+module PayrollElemResultList =
+    let traverse f list =
+        let (<*>) = PayrollElemResult.apply
+        let cons head tail = head :: tail
+        let initState = PayrollElemResult.return' []
+
+        let folder head tail =
+            PayrollElemResult.return' cons
+            <*> (f head)
+            <*> tail
+
+        List.foldBack folder list initState
+
+    let sequence list = traverse id list
 
 module PayrollElemBuilder =
     type PayrollElemBuilder() =
@@ -130,7 +167,7 @@ module PayrollElemBuilder =
         [<CustomOperation("select")>]
         member _.Select(coll, [<ProjectionParameter>] f) =
             coll
-            |> PayrollElem.bind (List.traversePayrollElem (PayrollElem.return' >> f))
+            |> PayrollElem.bind (PayrollElemList.traverse (PayrollElem.return' >> f))
 
 [<AutoOpen>]
 module PayrollElems =
@@ -142,7 +179,7 @@ module PayrollElems =
     let (>=>) = PayrollElem.composeK
 
     let constant = PayrollElem.return'
-
+    let run = PayrollElem.run
     let eval (elem: PayrollElem<'a>) ctx =
         effect {
             let! result = run elem ctx
@@ -152,35 +189,48 @@ module PayrollElems =
             | Error err -> return sprintf "Eroare: %s" err
         }
 
-    let run = PayrollElem.run
+    
 
     let (@) (elem: PayrollElem<'a>) (ctx: PayrollElem<PayrollElemContext>): PayrollElem<'a> =
         ctx >>= (run elem >> PayrollElem.fromElemResult)
 
-[<RequireQualifiedAccess>]
-module List =
-    let traversePayrollElem f list =
-        let (<*>) = PayrollElem.apply
-        let cons head tail = head :: tail
-        let initState = PayrollElem.return' []
 
-        let folder head tail =
-            PayrollElem.return' cons <*> (f head) <*> tail
+[<AutoOpen>]
+module NumericCombinators =
+    let inline Decimal' a = PayrollElem.map (decimal) a
+    let inline minValue<'a when ^a: comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) =
+        PayrollElem.lift2 max a b
 
-        List.foldBack folder list initState
+    let inline Min<'a when ^a: comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) =
+        PayrollElem.lift2 min a b
 
-    let sequencePayrollElem list = traversePayrollElem id list
+    let inline private _between a b value = (a <= value) && (value <= b)
+    let inline between a b value = PayrollElem.lift3 _between a b value
 
-    let traversePayrollElemResult f list =
-        let (<*>) = PayrollElemResult.apply
-        let cons head tail = head :: tail
-        let initState = PayrollElemResult.return' []
 
-        let folder head tail =
-            PayrollElemResult.return' cons
-            <*> (f head)
-            <*> tail
+[<AutoOpen>]
+module BooleanCombinators =
+    let When (cond: PayrollElem<bool>) (e1: PayrollElem<'a>) (e2: PayrollElem<'a>) =
+        elem {
+            let! cond' = cond
+            if cond' then return! e1 else return! e2
+        }
 
-        List.foldBack folder list initState
+    let Not = PayrollElem.map (not)
 
-    let sequencePayrollElemResult list = traversePayrollElemResult id list
+[<AutoOpen>]
+module ListCombinators = 
+    let inline sum (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a) and ^a: (static member Zero: ^a))
+                   : PayrollElem< ^a > =
+        xs |> PayrollElem.map List.sum
+
+    let inline avg (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a)): PayrollElem< ^a > =
+        xs |> PayrollElem.map List.average
+
+    let inline max (xs: PayrollElem< ^a list> when ^a: comparison): PayrollElem< ^a > = xs |> PayrollElem.map List.max
+
+    let inline min (xs: PayrollElem< ^a list> when ^a: comparison): PayrollElem< ^a > = xs |> PayrollElem.map List.min
+
+    let all = PayrollElem.map (List.reduce (&&))
+
+    let any = PayrollElem.map (List.reduce (||))

@@ -36,35 +36,35 @@ let now =
     PayrollElem.fromElemResult (effect { return DateTime.Now |> Ok })
 
 //Formula elems
-let nuEsteActiv = not esteActiv
-let esteContractPrincipalSiEsteActiv = esteContractPrincipal && esteActiv
-let esteContractPrincipalSiNuEsteActiv = esteContractPrincipal && not esteActiv
+let nuEsteActiv = Not esteActiv
+let esteContractPrincipalSiEsteActiv = esteContractPrincipal .&& esteActiv
+let esteContractPrincipalSiNuEsteActiv = esteContractPrincipal .&& Not esteActiv
 
 let esteContractPrincipalSiEsteActivLunaTrecuta =
-    (esteContractPrincipal && esteActiv) |> lastMonth
+    (esteContractPrincipal .&& esteActiv) |> lastMonth
 
 let esteContractPrincipalSiEsteActivAcum2Luni =
-    (esteContractPrincipal && esteActiv)
+    (esteContractPrincipal .&& esteActiv)
     |> lastMonth
     |> lastMonth
 
 let esteContractPrincipalSiNuEsteActivAcum2Luni =
-    (esteContractPrincipal && not esteActiv)
+    (esteContractPrincipal .&& Not esteActiv)
     |> lastMonth
     |> lastMonth
 
 let esteContractPrincipalSiNuEsteActivAcum3Luni =
-    (esteContractPrincipal && not esteActiv)
+    (esteContractPrincipal .&& Not esteActiv)
     |> (3 |> monthsAgo)
 
 let esteContractPrincipalSiAreToateContracteleActive =
     from allEmployeeContracts
-    |> select (esteContractPrincipal && esteActiv)
+    |> select (esteContractPrincipal .&& esteActiv)
     |> all
 
 let esteContractPrincipalSiAreVreunContractInactivLunaTrecuta =
     from allEmployeeContracts
-    |> select (esteContractPrincipal && not esteActiv)
+    |> select (esteContractPrincipal .&& Not esteActiv)
     |> lastMonth
     |> any
 
@@ -87,7 +87,7 @@ let sumaImpozitelorNerotunjitePeToateContractele =
 
 let sumaImpozitelorNerotunjitePeContracteleSecundare =
     from allEmployeeContracts
-    |> where (not esteContractPrincipal)
+    |> where (Not esteContractPrincipal)
     |> select impozitNerotunjit
     |> sum
 
@@ -107,7 +107,7 @@ let sumaImpozitelorNerotunjitePeContracteleSecundare'' =
 let impozit =
     When
         esteContractPrincipal
-        (ceiling sumaImpozitelorNerotunjitePeToateContractele
+        (ceil sumaImpozitelorNerotunjitePeToateContractele
          - sumaImpozitelorNerotunjitePeContracteleSecundare)
         impozitNerotunjit
 
@@ -137,15 +137,15 @@ let ultimele3Luni = from 3 |> lastMonths |> select yearMonth
 let q (deductions: PayrollElem<int list>) =
     elem {
         for x in deductions do
-            where (x = constant 0)
-            select (x + constant 0) //fun (x:PayrollElem<int>) -> x > (constant 0)
+        where (x .= constant 0)
+        select (x + constant 0) //fun (x:PayrollElem<int>) -> x > (constant 0)
     }
 
 let qq =
     elem {
         for ctx in allEmployeeContracts do
-            where (esteActiv @ ctx)
-            select (salariuNet @ ctx)
+        where (esteActiv @ ctx)
+        select (salariuNet @ ctx)
     }
 
 
