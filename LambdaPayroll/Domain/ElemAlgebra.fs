@@ -213,6 +213,14 @@ module PayrollElemBuilder =
         member inline this.SumBy'(xs, [<ProjectionParameter>] f) = 
             this.Select'(xs, f) |> PayrollElem.map List.sum
 
+        [<CustomOperation("maxBy")>]
+        member inline this.MaxBy(xs, [<ProjectionParameter>] f) = 
+            this.Select(xs, f) |> PayrollElem.map List.max
+
+        [<CustomOperation("maxBy'")>]
+        member inline this.MaxBy'(xs, [<ProjectionParameter>] f) = 
+            this.Select'(xs, f) |> PayrollElem.map List.max
+
 [<AutoOpen>]
 module PayrollElems =
     let elem = PayrollElemBuilder.PayrollElemBuilder()
@@ -241,40 +249,37 @@ module PayrollElems =
 
 [<AutoOpen>]
 module NumericCombinators =
-    let inline Decimal' a = PayrollElem.map (decimal) a
-    let inline minValue<'a when ^a: comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) =
-        PayrollElem.lift2 max a b
+    let inline decimal' a = PayrollElem.map (decimal) a
+    let inline max' a b = PayrollElem.lift2 max a b
+    let inline min' a b = PayrollElem.lift2 min a b
 
-    let inline Min<'a when ^a: comparison> (a: PayrollElem< ^a >) (b: PayrollElem< ^a >) =
-        PayrollElem.lift2 min a b
-
-    let inline private _between a b value = (a <= value) && (value <= b)
-    let inline between a b value = PayrollElem.lift3 _between a b value
+    let inline between a b value = (a <= value) && (value <= b)
+    let inline between' a b value = PayrollElem.lift3 between a b value
 
 
 [<AutoOpen>]
 module BooleanCombinators =
-    let When (cond: PayrollElem<bool>) (e1: PayrollElem<'a>) (e2: PayrollElem<'a>) =
+    let when' (cond: PayrollElem<bool>) (e1: PayrollElem<'a>) (e2: PayrollElem<'a>) =
         elem {
             let! cond' = cond
             if cond' then return! e1 else return! e2
         }
 
-    let Not = PayrollElem.map (not)
+    let not' = PayrollElem.map (not)
 
-[<AutoOpen>]
-module ListCombinators = 
-    let inline sum (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a) and ^a: (static member Zero: ^a))
-                   : PayrollElem< ^a > =
-        xs |> PayrollElem.map List.sum
+// [<AutoOpen>]
+// module ListCombinators = 
+//     let inline sum (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a) and ^a: (static member Zero: ^a))
+//                    : PayrollElem< ^a > =
+//         xs |> PayrollElem.map List.sum
 
-    let inline avg (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a)): PayrollElem< ^a > =
-        xs |> PayrollElem.map List.average
+//     let inline avg (xs: PayrollElem< ^a list> when ^a: (static member (+): ^a * ^a -> ^a)): PayrollElem< ^a > =
+//         xs |> PayrollElem.map List.average
 
-    let inline max (xs: PayrollElem< ^a list> when ^a: comparison): PayrollElem< ^a > = xs |> PayrollElem.map List.max
+//     //let inline max (xs: PayrollElem< ^a list> when ^a: comparison): PayrollElem< ^a > = xs |> PayrollElem.map List.max
 
-    let inline min (xs: PayrollElem< ^a list> when ^a: comparison): PayrollElem< ^a > = xs |> PayrollElem.map List.min
+//     let inline min (xs: PayrollElem< ^a list> when ^a: comparison): PayrollElem< ^a > = xs |> PayrollElem.map List.min
 
-    let all = PayrollElem.map (List.reduce (&&))
+//     let all = PayrollElem.map (List.reduce (&&))
 
-    let any = PayrollElem.map (List.reduce (||))
+//     let any = PayrollElem.map (List.reduce (||))

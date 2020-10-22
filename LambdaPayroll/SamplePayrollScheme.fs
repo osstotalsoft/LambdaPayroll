@@ -36,9 +36,9 @@ let now =
     PayrollElem.fromElemResult (effect { return DateTime.Now |> Ok })
 
 //Formula elems
-let nuEsteActiv = Not esteActiv
+let nuEsteActiv = not' esteActiv
 let esteContractPrincipalSiEsteActiv = esteContractPrincipal .&& esteActiv
-let esteContractPrincipalSiNuEsteActiv = esteContractPrincipal .&& Not esteActiv
+let esteContractPrincipalSiNuEsteActiv = esteContractPrincipal .&& not' esteActiv
 
 let esteContractPrincipalSiEsteActivLunaTrecuta =
     (esteContractPrincipal .&& esteActiv) |> lastMonth
@@ -49,12 +49,12 @@ let esteContractPrincipalSiEsteActivAcum2Luni =
     |> lastMonth
 
 let esteContractPrincipalSiNuEsteActivAcum2Luni =
-    (esteContractPrincipal .&& Not esteActiv)
+    (esteContractPrincipal .&& not' esteActiv)
     |> lastMonth
     |> lastMonth
 
 let esteContractPrincipalSiNuEsteActivAcum3Luni =
-    (esteContractPrincipal .&& Not esteActiv)
+    (esteContractPrincipal .&& not' esteActiv)
     |> (3 |> monthsAgo)
 
 let esteContractPrincipalSiAreToateContracteleActive =
@@ -67,7 +67,7 @@ let esteContractPrincipalSiAreVreunContractInactivLunaTrecuta =
     elem {
         for contract in allEmployeeContracts do
         where' (esteContractPrincipal @ contract)
-        any' (Not esteActiv |> lastMonth)
+        any' (not' esteActiv |> lastMonth)
     }
 
 let esteActivInToateUltimele3Luni =
@@ -94,12 +94,12 @@ let sumaImpozitelorNerotunjitePeToateContractele =
 let sumaImpozitelorNerotunjitePeContracteleSecundare =
     elem {
         for contract in allEmployeeContracts do
-        where' (Not esteContractPrincipal @ contract)
+        where' (not' esteContractPrincipal @ contract)
         sumBy' (impozitNerotunjit @ contract)
     }
 
 let impozit =
-    When
+    when'
         esteContractPrincipal
         (ceil sumaImpozitelorNerotunjitePeToateContractele
          - sumaImpozitelorNerotunjitePeContracteleSecundare)
