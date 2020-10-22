@@ -157,9 +157,9 @@ module PayrollElemBuilder =
             coll
             |> PayrollElemList.bind f
 
-        member _.Yield(value) = PayrollElemList.return' value//PayrollElemList.lift value
+        member _.Yield(value) = PayrollElemList.return' value
 
-        member _.YieldFrom(x) = x
+        member _.YieldFrom(x) = PayrollElemList.lift x
 
         [<CustomOperation("where", MaintainsVariableSpace = true)>]
         member _.Where(coll, [<ProjectionParameter>] predicate) =
@@ -177,9 +177,41 @@ module PayrollElemBuilder =
             |> PayrollElemList.map f
 
         [<CustomOperation("select'")>]
-        member _.SelectElem(coll, [<ProjectionParameter>] f) =
+        member _.Select'(coll, [<ProjectionParameter>] f) =
             coll
             |> PayrollElem.bind (PayrollElemList.traverse f)
+
+        [<CustomOperation("all")>]
+        member this.All(coll, [<ProjectionParameter>] f) = 
+            this.Select(coll, f) |> PayrollElem.map (List.reduce (&&))
+        
+        [<CustomOperation("all'")>]
+        member this.All'(coll, [<ProjectionParameter>] f) = 
+            this.Select'(coll, f) |> PayrollElem.map (List.reduce (&&))
+
+        [<CustomOperation("any")>]
+        member this.Any(coll, [<ProjectionParameter>] f) = 
+            this.Select(coll, f) |> PayrollElem.map (List.reduce (||))
+        
+        [<CustomOperation("any'")>]
+        member this.Any'(coll, [<ProjectionParameter>] f) = 
+            this.Select'(coll, f) |> PayrollElem.map (List.reduce (||))
+
+        [<CustomOperation("averageBy")>]
+        member inline this.AverageBy(xs, [<ProjectionParameter>] f) = 
+            this.Select(xs, f) |> PayrollElem.map List.average
+
+        [<CustomOperation("averageBy'")>]
+        member inline this.AverageBy'(xs, [<ProjectionParameter>] f) = 
+            this.Select'(xs, f) |> PayrollElem.map List.average
+
+        [<CustomOperation("sumBy")>]
+        member inline this.SumBy(xs, [<ProjectionParameter>] f) = 
+            this.Select(xs, f) |> PayrollElem.map List.sum
+
+        [<CustomOperation("sumBy'")>]
+        member inline this.SumBy'(xs, [<ProjectionParameter>] f) = 
+            this.Select'(xs, f) |> PayrollElem.map List.sum
 
 [<AutoOpen>]
 module PayrollElems =

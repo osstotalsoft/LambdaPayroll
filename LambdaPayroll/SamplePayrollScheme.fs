@@ -58,51 +58,45 @@ let esteContractPrincipalSiNuEsteActivAcum3Luni =
     |> (3 |> monthsAgo)
 
 let esteContractPrincipalSiAreToateContracteleActive =
-    from allEmployeeContracts
-    |> select (esteContractPrincipal .&& esteActiv)
-    |> all
+    elem {
+        for contract in allEmployeeContracts do
+        all' ((esteContractPrincipal .&& esteActiv) @ contract)
+    }
 
 let esteContractPrincipalSiAreVreunContractInactivLunaTrecuta =
-    from allEmployeeContracts
-    |> select (esteContractPrincipal .&& Not esteActiv)
-    |> lastMonth
-    |> any
+    elem {
+        for contract in allEmployeeContracts do
+        where' (esteContractPrincipal @ contract)
+        any' (Not esteActiv |> lastMonth)
+    }
 
 let esteActivInToateUltimele3Luni =
-    from 3 |> lastMonths |> select esteActiv |> all
+    elem {
+        for month in (3 |> lastMonths) do
+        all' (esteActiv @ month)
+    }
 
 let mediaSalariuluiBrutInUltimele3LuniActive =
-    from 3
-    |> lastMonths
-    |> where esteActiv
-    |> select salariuBrut
-    |> avg
+    elem {
+        for month in (3 |> lastMonths) do
+        where' (esteActiv @ month)
+        averageBy' (salariuBrut @ month)
+    }
 
 let impozitNerotunjit = procentImpozit * salariuBrut
 
 let sumaImpozitelorNerotunjitePeToateContractele =
-    from allEmployeeContracts
-    |> select impozitNerotunjit
-    |> sum
+    elem {
+        for contract in allEmployeeContracts do
+        sumBy' (impozitNerotunjit @ contract)
+    }
 
 let sumaImpozitelorNerotunjitePeContracteleSecundare =
-    from allEmployeeContracts
-    |> where (Not esteContractPrincipal)
-    |> select impozitNerotunjit
-    |> sum
-
-let sumaImpozitelorNerotunjitePeContracteleSecundare' =
-    from allEmployeeContracts
-    |> select (When esteContractPrincipal (constant 0m) impozitNerotunjit)
-    |> sum
-
-let sumaImpozitelorNerotunjitePeContracteleSecundare'' =
-    from allEmployeeContracts
-    |> select
-        (When esteContractPrincipal
-         <| Then(constant 0m)
-         <| Else impozitNerotunjit)
-    |> sum
+    elem {
+        for contract in allEmployeeContracts do
+        where' (Not esteContractPrincipal @ contract)
+        sumBy' (impozitNerotunjit @ contract)
+    }
 
 let impozit =
     When
@@ -113,28 +107,47 @@ let impozit =
 
 
 let impoziteleNerotunjitePeToateContractele =
-    from allEmployeeContracts
-    |> select impozitNerotunjit
+     elem {
+        for contract in allEmployeeContracts do
+        select' (impozitNerotunjit @ contract)
+    }
 
 let impozitelePeToateContractele =
-    from allEmployeeContracts |> select impozit
+    elem {
+        for contract in allEmployeeContracts do
+        select' (impozit @ contract)
+    }
 
 let sumaImpozitelorPeToateContractele =
-    from allEmployeeContracts |> select impozit |> sum
+    elem {
+        for contract in allEmployeeContracts do
+        sumBy' (impozit @ contract)
+    }
 
 
 let salariuNet = salariuBrut - impozit //|> log "salariuNet" |> memoize
 
 let diferentaNetFataDeLunaTrecuta =
-    salariuNet - (salariuNet |> from lastMonth)
+    salariuNet - (salariuNet |> lastMonth)
 
 let mediaSalariuluiNetPeUltimele3Luni =
-    from 3 |> lastMonths |> select salariuNet |> avg
+    elem {
+        for month in (3 |> lastMonths) do
+        where' (esteActiv @ month)
+        averageBy' (salariuNet @ month)
+    }
 
 
-let ultimele3Luni = from 3 |> lastMonths |> select yearMonth
+let ultimele3Luni = 
+    elem {
+        for month in (3 |> lastMonths) do
+        select' (yearMonth @ month)
+    }
 
-let q (deductions: PayrollElem<{|RangeStart: System.Decimal; RangeEnd: System.Decimal; Value: System.Decimal; DeductedPersonsCount: System.Decimal|} list>) =
+let q (deductions: PayrollElem<{| RangeStart: System.Decimal
+                                  RangeEnd: System.Decimal
+                                  Value: System.Decimal
+                                  DeductedPersonsCount: System.Decimal |} list>) =
     elem {
         let! x = mediaSalariuluiNetPeUltimele3Luni
         for d in deductions do
