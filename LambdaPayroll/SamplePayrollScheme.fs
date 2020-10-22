@@ -36,129 +36,137 @@ let now =
     PayrollElem.fromElemResult (effect { return DateTime.Now |> Ok })
 
 //Formula elems
-let nuEsteActiv = not esteActiv
-let esteContractPrincipalSiEsteActiv = esteContractPrincipal && esteActiv
-let esteContractPrincipalSiNuEsteActiv = esteContractPrincipal && not esteActiv
+let nuEsteActiv = not' esteActiv
+let esteContractPrincipalSiEsteActiv = esteContractPrincipal .&& esteActiv
+let esteContractPrincipalSiNuEsteActiv = esteContractPrincipal .&& not' esteActiv
 
 let esteContractPrincipalSiEsteActivLunaTrecuta =
-    (esteContractPrincipal && esteActiv) |> lastMonth
+    (esteContractPrincipal .&& esteActiv) |> lastMonth
 
 let esteContractPrincipalSiEsteActivAcum2Luni =
-    (esteContractPrincipal && esteActiv)
+    (esteContractPrincipal .&& esteActiv)
     |> lastMonth
     |> lastMonth
 
 let esteContractPrincipalSiNuEsteActivAcum2Luni =
-    (esteContractPrincipal && not esteActiv)
+    (esteContractPrincipal .&& not' esteActiv)
     |> lastMonth
     |> lastMonth
 
 let esteContractPrincipalSiNuEsteActivAcum3Luni =
-    (esteContractPrincipal && not esteActiv)
+    (esteContractPrincipal .&& not' esteActiv)
     |> (3 |> monthsAgo)
 
 let esteContractPrincipalSiAreToateContracteleActive =
-    from allEmployeeContracts
-    |> select (esteContractPrincipal && esteActiv)
-    |> all
+    elem {
+        for contract in allEmployeeContracts do
+        all' ((esteContractPrincipal .&& esteActiv) @ contract)
+    }
 
 let esteContractPrincipalSiAreVreunContractInactivLunaTrecuta =
-    from allEmployeeContracts
-    |> select (esteContractPrincipal && not esteActiv)
-    |> lastMonth
-    |> any
+    elem {
+        for contract in allEmployeeContracts do
+        where' (esteContractPrincipal @ contract)
+        any' (not' esteActiv |> lastMonth)
+    }
 
 let esteActivInToateUltimele3Luni =
-    from 3 |> lastMonths |> select esteActiv |> all
+    elem {
+        for month in (3 |> lastMonths) do
+        all' (esteActiv @ month)
+    }
 
 let mediaSalariuluiBrutInUltimele3LuniActive =
-    from 3
-    |> lastMonths
-    |> where esteActiv
-    |> select salariuBrut
-    |> avg
+    elem {
+        for month in (3 |> lastMonths) do
+        where' (esteActiv @ month)
+        averageBy' (salariuBrut @ month)
+    }
 
 let impozitNerotunjit = procentImpozit * salariuBrut
 
 let sumaImpozitelorNerotunjitePeToateContractele =
-    from allEmployeeContracts
-    |> select impozitNerotunjit
-    |> sum
+    elem {
+        for contract in allEmployeeContracts do
+        sumBy' (impozitNerotunjit @ contract)
+    }
 
 let sumaImpozitelorNerotunjitePeContracteleSecundare =
-    from allEmployeeContracts
-    |> where (not esteContractPrincipal)
-    |> select impozitNerotunjit
-    |> sum
-
-let sumaImpozitelorNerotunjitePeContracteleSecundare' =
-    from allEmployeeContracts
-    |> select (When esteContractPrincipal (constant 0m) impozitNerotunjit)
-    |> sum
-
-let sumaImpozitelorNerotunjitePeContracteleSecundare'' =
-    from allEmployeeContracts
-    |> select
-        (When esteContractPrincipal
-         <| Then(constant 0m)
-         <| Else impozitNerotunjit)
-    |> sum
+    elem {
+        for contract in allEmployeeContracts do
+        where' (not' esteContractPrincipal @ contract)
+        sumBy' (impozitNerotunjit @ contract)
+    }
 
 let impozit =
-    When
+    when'
         esteContractPrincipal
-        (ceiling sumaImpozitelorNerotunjitePeToateContractele
+        (ceil sumaImpozitelorNerotunjitePeToateContractele
          - sumaImpozitelorNerotunjitePeContracteleSecundare)
         impozitNerotunjit
 
 
 let impoziteleNerotunjitePeToateContractele =
-    from allEmployeeContracts
-    |> select impozitNerotunjit
+     elem {
+        for contract in allEmployeeContracts do
+        select' (impozitNerotunjit @ contract)
+    }
 
 let impozitelePeToateContractele =
-    from allEmployeeContracts |> select impozit
+    elem {
+        for contract in allEmployeeContracts do
+        select' (impozit @ contract)
+    }
 
 let sumaImpozitelorPeToateContractele =
-    from allEmployeeContracts |> select impozit |> sum
+    elem {
+        for contract in allEmployeeContracts do
+        sumBy' (impozit @ contract)
+    }
 
 
 let salariuNet = salariuBrut - impozit //|> log "salariuNet" |> memoize
 
 let diferentaNetFataDeLunaTrecuta =
-    salariuNet - (salariuNet |> from lastMonth)
+    salariuNet - (salariuNet |> lastMonth)
 
 let mediaSalariuluiNetPeUltimele3Luni =
-    from 3 |> lastMonths |> select salariuNet |> avg
-
-
-let ultimele3Luni = from 3 |> lastMonths |> select yearMonth
-
-let q (deductions: PayrollElem<int list>) =
     elem {
-        for x in deductions do
-            where (x = constant 0)
-            select (x + constant 0) //fun (x:PayrollElem<int>) -> x > (constant 0)
+        for month in (3 |> lastMonths) do
+        where' (esteActiv @ month)
+        averageBy' (salariuNet @ month)
+    }
+
+
+let ultimele3Luni = 
+    elem {
+        for month in (3 |> lastMonths) do
+        select' (yearMonth @ month)
+    }
+
+let q (deductions: PayrollElem<{| RangeStart: System.Decimal
+                                  RangeEnd: System.Decimal
+                                  Value: System.Decimal
+                                  DeductedPersonsCount: System.Decimal |} list>) =
+    elem {
+        let! x = mediaSalariuluiNetPeUltimele3Luni
+        for d in deductions do
+        where (d.DeductedPersonsCount > x)
+        select d.Value
     }
 
 let qq =
     elem {
-        for ctx in allEmployeeContracts do
-            where (esteActiv @ ctx)
-            select (salariuNet @ ctx)
+        for contract in allEmployeeContracts do
+        let! esteActiv = esteActiv @ contract
+        where esteActiv
+        let! sn = salariuNet @ contract
+        select sn
     }
 
-
-// let q' (deductions:PayrollElem<int list>) =
-//     let xxx  =
-//         elem.Select(
-//             elem.Where(
-//                 elem.For(
-//                     deductions,
-//                     (fun x -> elem.YieldFrom( x + (constant 1)))
-//                 ),
-//                 (fun x-> x = (constant 0))
-//             ),
-//             (fun x -> x + (constant 0))
-//         )
-//     xxx
+let qq' =
+    elem {
+        for contract in allEmployeeContracts do
+        where' (esteActiv @ contract)
+        select' (salariuNet @ contract)
+    }
