@@ -124,3 +124,15 @@ let TaxImpozitPct =
 
 let baseDeduction = 
     when' ContractIsBasePosition TotalGrossSalary (constant 0m)
+
+let IsLastContract = 
+    elem {
+        let! lastContractId = elem {
+            for contract in allEmployeeContracts do
+            select' (contractId @ contract)
+            last
+        }
+        let! currentContractId =  contractId @@ PayrollElem.ask
+        return currentContractId = lastContractId
+    }
+    |> memoize

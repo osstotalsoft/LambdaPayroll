@@ -16,3 +16,9 @@ let yearMonth: PayrollElem<YearMonth> =
         let! (_, yearMonth) = PayrollElem.ask
         return yearMonth
     }
+
+let contractId: PayrollElem<ContractId> = 
+    elem {
+        let! (contractId, _) = PayrollElem.ask
+        return contractId
+    }

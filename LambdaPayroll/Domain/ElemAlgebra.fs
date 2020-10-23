@@ -221,6 +221,10 @@ module PayrollElemBuilder =
         member inline this.MaxBy'(xs, [<ProjectionParameter>] f) = 
             this.Select'(xs, f) |> PayrollElem.map List.max
 
+        [<CustomOperation("last")>]
+        member inline _.Last(xs) = 
+            xs |> PayrollElem.map List.last
+
 [<AutoOpen>]
 module PayrollElems =
     let elem = PayrollElemBuilder.PayrollElemBuilder()
@@ -245,6 +249,9 @@ module PayrollElems =
 
     let (@) (elem: PayrollElem<'a>) (ctx: PayrollElemContext): PayrollElem<'a> =
         PayrollElem(fun _ -> run elem ctx)
+
+    let (@@) (elem: PayrollElem<'a>) (ctx: PayrollElem<PayrollElemContext>): PayrollElem<'a> =
+        ctx >>= fun ctx -> PayrollElem(fun _ -> run elem ctx)
 
 
 [<AutoOpen>]
