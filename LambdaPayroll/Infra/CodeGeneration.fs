@@ -9,17 +9,27 @@ module CodeGenerationService =
     open NBB.Core.FSharp.Data
     open NBB.Core.FSharp.Data.State
 
-    let private recordAccessorModule (ElemCode code) (elemDef: DbCollectionElemDefinition) =
-        let accessors =
+    let private recordDefinition (ElemCode code) (elemDef: DbCollectionElemDefinition) =
+        let recordTypeName = sprintf "%sRecord" code
+        let recordType = 
+            sprintf "type %s = \n    { %s }"
+                recordTypeName
+                (elemDef.Columns |> List.map (fun colDef -> (sprintf "%s: %s" colDef.ColumnName colDef.ColumnDataType)) |> String.concat ";\n      ")
+        let extensions =
             elemDef.Columns 
-            |> List.map (fun colDef -> (sprintf "let inline _%s a = PayrollElem.map (fun x -> (^a: (member %s: _) x)) a" colDef.ColumnName colDef.ColumnName))
+            |> List.map (fun colDef -> 
+                sprintf 
+                    "[<Extension>]\n    static member inline %s (a: PayrollElem<%s>) = PayrollElem.map (fun x -> x.%s) a" 
+                    colDef.ColumnName recordTypeName colDef.ColumnName)
             |> String.concat "\n    "
         
-        (sprintf "[<AutoOpen>]
-module %s =
+        (sprintf "%s
+
+[<Extension>]
+type %sExtensions =
     %s
-" code accessors)
-   
+" recordType code extensions)
+
     let private elemExpression ({ Code = ElemCode (code); Type = typ; DataType = dataType }: ElemDefinition) =
         match typ with
         | DbScalar {TableName=tableName; ColumnName=columnName} -> 
@@ -28,11 +38,7 @@ module %s =
                 dataType.Name code tableName columnName
         | Formula { Formula = formula } -> sprintf "%s" (formula |> FormulaParser.stripDepMarkers)
         | DbCollection {TableName = tableName; Columns= columnDefs} ->
-            
-            let record = 
-                sprintf "{|%s|}"
-                    (columnDefs |> List.map (fun colDef -> (sprintf "%s: %s" colDef.ColumnName colDef.ColumnDataType)) |> String.concat "; ")
-
+            let recordTypeName = sprintf "%sRecord" code
             let columns =
                 sprintf "[%s]"
                     (columnDefs |> List.map (fun colDef -> (sprintf "{ColumnName= \"%s\"; ColumnDataType = \"%s\"}" colDef.ColumnName colDef.ColumnDataType)) |> String.concat "; ")
@@ -41,7 +47,7 @@ module %s =
 HrAdmin.readCollectionFromDb<%s>
         (ElemCode \"%s\") { 
             TableName = \"%s\"
-            Columns = %s}" record code tableName columns)
+            Columns = %s}" recordTypeName code tableName columns)
             
 
     let private elemstatement (elemDefinition: ElemDefinition) =
@@ -68,9 +74,11 @@ module Generated
 open ElemAlgebra
 open Combinators
 open DefaultPayrollElems
-open System
-open NBB.Core.Effects.FSharp
 open LambdaPayroll.Domain
+open NBB.Core.Effects.FSharp
+open System
+open System.Runtime.CompilerServices  
+
 "
 
     let generateSourceCode (GenerateSourceCodeSideEffect store) =
@@ -90,8 +98,8 @@ open LambdaPayroll.Domain
 
                         return depsLines |> Result.map (append crtLine)
                     | { Type = DbCollection colElemDef} ->
-                        let recordAccessors = recordAccessorModule elem colElemDef
-                        return Ok([crtLine; recordAccessors])
+                        let recordDefinition = recordDefinition elem colElemDef
+                        return Ok([recordDefinition; crtLine])
                     | _ -> return Ok([crtLine])
                 }
             state {

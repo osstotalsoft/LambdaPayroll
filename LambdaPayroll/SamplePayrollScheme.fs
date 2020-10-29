@@ -6,6 +6,7 @@ open DefaultPayrollElems
 open System
 open NBB.Core.Effects.FSharp
 open LambdaPayroll.Domain
+open System.Runtime.CompilerServices   
 
 //HrAdmin elems
 let salariuBrut =
@@ -144,36 +145,17 @@ let ultimele3Luni =
         select' (yearMonth @ month)
     }
 
+type DeductionsRecord = {RangeStart: System.Decimal; RangeEnd: System.Decimal; Value: System.Decimal; DeductedPersonsCount: System.Decimal}
+
 let Deductions = 
-    HrAdmin.readCollectionFromDb<{|RangeStart: System.Decimal; RangeEnd: System.Decimal; Value: System.Decimal; DeductedPersonsCount: System.Decimal|}>
+    HrAdmin.readCollectionFromDb<DeductionsRecord>
             (ElemCode "Deductions") { 
                 TableName = "hr.Deduction"
                 Columns = [{ColumnName= "RangeStart"; ColumnDataType = "System.Decimal"}; {ColumnName= "RangeEnd"; ColumnDataType = "System.Decimal"}; {ColumnName= "Value"; ColumnDataType = "System.Decimal"}; {ColumnName= "DeductedPersonsCount"; ColumnDataType = "System.Decimal"}]}
 
-[<AutoOpen>]
-module Deductions =
-    let inline _RangeStart a = PayrollElem.map (fun x -> (^a: (member RangeStart: _) x)) a
-    let inline _RangeEnd a = PayrollElem.map (fun x -> (^a: (member RangeEnd: _) x)) a
-    let inline _Value a = PayrollElem.map (fun x -> (^a: (member Value: _) x)) a
-    let inline _DeductedPersonsCount a = PayrollElem.map (fun x -> (^a: (member DeductedPersonsCount: _) x)) a
-
-    //     [<Extension>]
-    //     type DeductionsExtensions =
-    //         [<Extension>]
-    //         static member inline RangeStart(a) = PayrollElem.map (fun x -> (^a: (member RangeStart: _) x)) a
-    //         [<Extension>]
-    //         static member inline RangeEnd(a) = PayrollElem.map (fun x -> (^a: (member RangeEnd: _) x)) a
-    //         [<Extension>]
-    //         static member inline Value(a) = PayrollElem.map (fun x -> (^a: (member Value: _) x)) a
-    //         [<Extension>]
-    //         static member inline DeductedPersonsCount(a) = PayrollElem.map (fun x -> (^a: (member DeductedPersonsCount: _) x)) a
 
 
-
-let q (deductions: PayrollElem<{| RangeStart: System.Decimal
-                                  RangeEnd: System.Decimal
-                                  Value: System.Decimal
-                                  DeductedPersonsCount: System.Decimal |} list>) =
+let q (deductions: PayrollElem<DeductionsRecord list>) =
     elem {
         let! x = mediaSalariuluiNetPeUltimele3Luni
         for d in deductions do
