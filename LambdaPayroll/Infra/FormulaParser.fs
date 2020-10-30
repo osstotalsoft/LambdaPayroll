@@ -1,16 +1,18 @@
 ﻿namespace LambdaPayroll.Infra
 
 open LambdaPayroll.Application.InfraEffects
+open LambdaPayroll.Domain
 
 module FormulaParser =
     open System.Text.RegularExpressions
     let private pattern =  @"@([a-zA-Z0-9_]+)"
     let private evaluator (m : Match) = m.Groups.[1].Value
 
-    let getDeps (formulaWithTokens) =
-        Regex.Matches(formulaWithTokens, pattern, RegexOptions.Compiled)
+    let getDeps (defs: Set<ElemCode>) (formulaWithTokens: string) =
+        Regex.Matches(formulaWithTokens, "([a-zA-Z0-9_]+)", RegexOptions.Compiled)
         |> Seq.cast<Match>
         |> Seq.map evaluator
+        |> Seq.where (ElemCode >> defs.Contains)
         |> Seq.toList
 
     let stripDepMarkers (formulaWithTokens) =
@@ -19,5 +21,5 @@ module FormulaParser =
 module FormulaParsingService = 
     open FormulaParsingService
 
-    let getFormulaDeps (GetFormulaDepsSideEffect formula) =
-        FormulaParser.getDeps formula
+    let getFormulaDeps (GetFormulaDepsSideEffect(formula, codes)) =
+        FormulaParser.getDeps codes formula
