@@ -76,13 +76,13 @@ type DeductionsRecord =
 [<Extension>]
 type DeductionsExtensions =
     [<Extension>]
-    static member inline RangeStart (a: PayrollElem<DeductionsRecord>) = PayrollElem.map (fun x -> x.RangeStart) a
+    static member RangeStart (a: PayrollElem<DeductionsRecord>) = PayrollElem.map (fun x -> x.RangeStart) a
     [<Extension>]
-    static member inline RangeEnd (a: PayrollElem<DeductionsRecord>) = PayrollElem.map (fun x -> x.RangeEnd) a
+    static member RangeEnd (a: PayrollElem<DeductionsRecord>) = PayrollElem.map (fun x -> x.RangeEnd) a
     [<Extension>]
-    static member inline Value (a: PayrollElem<DeductionsRecord>) = PayrollElem.map (fun x -> x.Value) a
+    static member Value (a: PayrollElem<DeductionsRecord>) = PayrollElem.map (fun x -> x.Value) a
     [<Extension>]
-    static member inline DeductedPersonsCount (a: PayrollElem<DeductionsRecord>) = PayrollElem.map (fun x -> x.DeductedPersonsCount) a
+    static member DeductedPersonsCount (a: PayrollElem<DeductionsRecord>) = PayrollElem.map (fun x -> x.DeductedPersonsCount) a
 
 let Deductions = 
     HrAdmin.readCollectionFromDb<DeductionsRecord>

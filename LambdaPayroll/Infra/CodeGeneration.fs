@@ -19,7 +19,7 @@ module CodeGenerationService =
             elemDef.Columns 
             |> List.map (fun colDef -> 
                 sprintf 
-                    "[<Extension>]\n    static member inline %s (a: PayrollElem<%s>) = PayrollElem.map (fun x -> x.%s) a" 
+                    "[<Extension>]\n    static member %s (a: PayrollElem<%s>) = PayrollElem.map (fun x -> x.%s) a" 
                     colDef.ColumnName recordTypeName colDef.ColumnName)
             |> String.concat "\n    "
         
