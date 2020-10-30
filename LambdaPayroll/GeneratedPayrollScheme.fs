@@ -4,9 +4,10 @@ module Generated'
 open ElemAlgebra
 open Combinators
 open DefaultPayrollElems
-open System
-open NBB.Core.Effects.FSharp
 open LambdaPayroll.Domain
+open NBB.Core.Effects.FSharp
+open System
+open System.Runtime.CompilerServices  
 
 let ContractGrossSalary = 
     HrAdmin.readScalarFromDb<Decimal> (ElemCode "ContractGrossSalary") { TableName = "hr.Contract"; ColumnName = "GrossSalary" }
@@ -66,18 +67,28 @@ let ContractDeductedPersonsCount =
 let ContractIsBasePosition = 
     HrAdmin.readScalarFromDb<Boolean> (ElemCode "ContractIsBasePosition") { TableName = "hr.Contract"; ColumnName = "IsBasePosition" }
 
+type DeductionsRecord = 
+    { RangeStart: System.Decimal;
+      RangeEnd: System.Decimal;
+      Value: System.Decimal;
+      DeductedPersonsCount: System.Decimal }
+
+[<Extension>]
+type DeductionsExtensions =
+    [<Extension>]
+    static member RangeStart (a: PayrollElem<DeductionsRecord>) = PayrollElem.map (fun x -> x.RangeStart) a
+    [<Extension>]
+    static member RangeEnd (a: PayrollElem<DeductionsRecord>) = PayrollElem.map (fun x -> x.RangeEnd) a
+    [<Extension>]
+    static member Value (a: PayrollElem<DeductionsRecord>) = PayrollElem.map (fun x -> x.Value) a
+    [<Extension>]
+    static member DeductedPersonsCount (a: PayrollElem<DeductionsRecord>) = PayrollElem.map (fun x -> x.DeductedPersonsCount) a
+
 let Deductions = 
-    HrAdmin.readCollectionFromDb<{|RangeStart: System.Decimal; RangeEnd: System.Decimal; Value: System.Decimal; DeductedPersonsCount: System.Decimal|}>
+    HrAdmin.readCollectionFromDb<DeductionsRecord>
             (ElemCode "Deductions") { 
                 TableName = "hr.Deduction"
                 Columns = [{ColumnName= "RangeStart"; ColumnDataType = "System.Decimal"}; {ColumnName= "RangeEnd"; ColumnDataType = "System.Decimal"}; {ColumnName= "Value"; ColumnDataType = "System.Decimal"}; {ColumnName= "DeductedPersonsCount"; ColumnDataType = "System.Decimal"}]}
-
-[<AutoOpen>]
-module Deductions =
-    let inline _RangeStart a = PayrollElem.map (fun x -> (^a: (member RangeStart: _) x)) a
-    let inline _RangeEnd a = PayrollElem.map (fun x -> (^a: (member RangeEnd: _) x)) a
-    let inline _Value a = PayrollElem.map (fun x -> (^a: (member Value: _) x)) a
-    let inline _DeductedPersonsCount a = PayrollElem.map (fun x -> (^a: (member DeductedPersonsCount: _) x)) a
 
 let Deduction = 
     elem {

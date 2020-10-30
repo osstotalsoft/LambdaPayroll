@@ -36,6 +36,7 @@ let mediator =
 let services = ServiceCollection();
 services.AddEffects() |> ignore
 services
+    .AddSideEffectHandler(Common.handleException)
     .AddSideEffectHandler(ElemDefinitionStoreRepo.loadCurrent payrollConnString)
     .AddSideEffectHandler(DbElemValue.loadScalar hcmConnectionString)
     .AddSideEffectHandler(DbElemValue.loadCollection hcmConnectionString)
@@ -83,7 +84,7 @@ let ``It shoud evaluate formula with params (integration)`` () =
                 GO
                 SET IDENTITY_INSERT [dbo].[FromulaElemDefinition] ON 
                 GO
-                INSERT [dbo].[FromulaElemDefinition] ([FormulaId], [Formula], [ElemDefinitionId]) VALUES (1, N'@SalariuBrut * (Payroll.constant 0.1m)', 2)
+                INSERT [dbo].[FromulaElemDefinition] ([FormulaId], [Formula], [ElemDefinitionId]) VALUES (1, N'@SalariuBrut * (constant 0.1m)', 2)
                 GO
                 INSERT [dbo].[FromulaElemDefinition] ([FormulaId], [Formula], [ElemDefinitionId]) VALUES (2, N'@SalariuBrut - @Impozit', 3)
                 GO
