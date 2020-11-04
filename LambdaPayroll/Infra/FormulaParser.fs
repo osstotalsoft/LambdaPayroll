@@ -13,7 +13,8 @@ module FormulaParser =
         |> Seq.cast<Match>
         |> Seq.map evaluator
         |> Seq.where (ElemCode >> defs.Contains)
-        |> Seq.toList
+        |> Set
+        |> Set.toList
 
     let stripDepMarkers (formulaWithTokens) =
         Regex.Replace(formulaWithTokens, pattern, MatchEvaluator evaluator, RegexOptions.Compiled)
