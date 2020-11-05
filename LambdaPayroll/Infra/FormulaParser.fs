@@ -8,11 +8,11 @@ module FormulaParser =
     let private pattern =  @"@([a-zA-Z0-9_]+)"
     let private evaluator (m : Match) = m.Groups.[1].Value
 
-    let getDeps (defs: Set<ElemCode>) (formulaWithTokens: string) =
-        Regex.Matches(formulaWithTokens, "([a-zA-Z0-9_]+)", RegexOptions.Compiled)
+    let getDeps (allCodes: Set<ElemCode>) (formula: string) =
+        Regex.Matches(formula, "([a-zA-Z0-9_]+)", RegexOptions.Compiled)
         |> Seq.cast<Match>
         |> Seq.map evaluator
-        |> Seq.where (ElemCode >> defs.Contains)
+        |> Seq.where (ElemCode >> allCodes.Contains)
         |> Set
         |> Set.toList
 
