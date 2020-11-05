@@ -7,9 +7,9 @@ open LambdaPayroll.Domain
 
 module FormulaParsingService =
     type GetFormulaDepsSideEffect =
-        | GetFormulaDepsSideEffect of formula: string * codes: Set<ElemCode>
+        | GetFormulaDepsSideEffect of formula: string * allCodes: Set<ElemCode>
         interface ISideEffect<string list>
 
-    let getFormulaDeps formula codes =
-        Effect.Of(GetFormulaDepsSideEffect(formula, codes))
+    let getFormulaDeps formula allcodes =
+        Effect.Of(GetFormulaDepsSideEffect(formula, allcodes))
         |> Effect.wrap

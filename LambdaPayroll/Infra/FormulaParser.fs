@@ -22,5 +22,5 @@ module FormulaParser =
 module FormulaParsingService = 
     open FormulaParsingService
 
-    let getFormulaDeps (GetFormulaDepsSideEffect(formula, codes)) =
-        FormulaParser.getDeps codes formula
+    let getFormulaDeps (GetFormulaDepsSideEffect(formula, allCodes)) =
+        FormulaParser.getDeps allCodes formula

@@ -94,7 +94,7 @@ open System.Runtime.CompilerServices
                     match elemDefinition with
                     | { Type = Formula { Formula = formula } } ->
                         let deps = formula |> FormulaParser.getDeps allCodes |> List.map ElemCode
-                        let! depsLines = deps |> (buildLinesMultipleElems allCodes)
+                        let! depsLines = deps |> buildLinesMultipleElems allCodes
 
                         return depsLines |> Result.map (append crtLine)
                     | { Type = DbCollection colElemDef} ->
@@ -103,21 +103,21 @@ open System.Runtime.CompilerServices
                     | _ -> return Ok([crtLine])
                 }
             state {
-                let! defs = State.get ()
-                if defs.Contains(elem) then
+                let! processedElems = State.get ()
+                if processedElems.Contains(elem) then
                     return Ok(List.empty)
                 else
                     let! elemResult = 
                         ElemDefinitionStore.findElemDefinition store elem
                         |> Result.traverseState buildLines
                         
-                    do! State.modify(fun state -> state.Add elem)
+                    do! State.modify(fun processedElems -> processedElems.Add elem)
                     return elemResult |> Result.join
             }
           
         let buildProgramLines  = 
             state {
-                let allCodes = ElemDefinitionStore.getAllCodes store 
+                let allCodes = ElemDefinitionStore.getAllCodes store
                 let! result = allCodes |> buildLinesMultipleElems (allCodes |> Set)
                 return result |> Result.map (prepend header)
             }
