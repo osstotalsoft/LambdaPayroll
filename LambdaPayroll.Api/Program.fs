@@ -94,6 +94,7 @@ module App =
             .AddSideEffectHandler(DbElemValue.loadScalar hcmConnectionString)
             .AddSideEffectHandler(DbElemValue.loadCollection hcmConnectionString)
             .AddSideEffectHandler(DbElemValue.getAllEmployeeContracts hcmConnectionString)
+            .AddSideEffectHandler(DbElemValue.getAllCompanyContracts hcmConnectionString)
             .AddSideEffectHandler(DbElemValue.getOtherEmployeeContracts hcmConnectionString)
             .AddSideEffectHandler(InteractiveEvalSessionCache.get)
             .AddSideEffectHandler(InteractiveEvalSessionCache.set)

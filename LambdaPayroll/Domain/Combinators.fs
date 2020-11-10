@@ -57,6 +57,19 @@ module HrCombinators =
                 return! allContractsElemResults
             })
 
+    let allCompanyContracts: PayrollElem<PayrollElemContext list> =
+        PayrollElem(fun (contractId, yearMonth) ->
+            effect {
+                let! allContracts = HrAdmin.getAllCompanyContracts yearMonth
+
+                let allContractsElemResults =
+                    allContracts
+                    |> List.map (fun x -> (x, yearMonth))
+                    |> PayrollElemResult.return'
+
+                return! allContractsElemResults
+            })
+
 [<AutoOpen>]
 module UtilityCombinators =
     let log elemCode (PayrollElem elem: PayrollElem<'a>) =

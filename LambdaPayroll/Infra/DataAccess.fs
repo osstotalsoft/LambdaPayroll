@@ -214,9 +214,9 @@ module DataAccess =
 
             let results =
                 read (fun r -> unbox r.[0] )
-                    "SELECT DISTINCT ContractId FROM Salarii 
-                        WHERE PersonId = (SELECT TOP 1 PersonId from Salarii WHERE ContractId = @ContractId)
-                        AND ContractId != @ContractId"
+                    "SELECT DISTINCT ContractId FROM hr.Contract 
+                        WHERE OwnerDataId = (SELECT TOP 1 OwnerDataId from hr.Contract WHERE [Year] = @Year and [Month] = @Month and ContractId = @ContractId)
+                        AND [Year] = @Year AND [Month] = @Month AND ContractId != @ContractId"
                     ["@ContractId", box contractId]
 
             results
@@ -230,11 +230,28 @@ module DataAccess =
 
             let results =
                 read (fun r -> unbox r.[0] )
-                    "SELECT ContractId from hr.Contract 
+                    "SELECT DISTINCT ContractId FROM hr.Contract 
                         WHERE OwnerDataId = (SELECT TOP 1 OwnerDataId from hr.Contract WHERE [Year] = @Year and [Month] = @Month and ContractId = @ContractId)
-	                    AND [Year] = @Year and [Month] = @Month "
+	                    AND [Year] = @Year AND [Month] = @Month"
                     [
                         "@ContractId", box contractId
+                        "@Year", box year
+                        "@Month", box month
+                    ]
+
+            results
+            |> List.map ContractId
+
+        let getAllCompanyContracts (connectionString: string)
+                      (HrAdmin.GetAllCompanyContractsSideEffect(YearMonth (year, month)))
+                      : ContractId list =
+            let read = SqlCommandHelper.read connectionString
+
+            let results =
+                read (fun r -> unbox r.[0] )
+                    "SELECT DISTINCT ContractId FROM hr.Contract 
+                        WHERE [Year] = @Year and [Month] = @Month"
+                    [
                         "@Year", box year
                         "@Month", box month
                     ]

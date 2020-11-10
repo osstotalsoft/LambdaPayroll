@@ -221,6 +221,14 @@ module PayrollElemBuilder =
         member inline this.MaxBy'(xs, [<ProjectionParameter>] f) = 
             this.Select'(xs, f) |> PayrollElem.map List.max
 
+        [<CustomOperation("head")>]
+        member inline _.Head(xs) = 
+            xs |> PayrollElem.map List.head
+
+        [<CustomOperation("headOrDefault")>]
+        member inline _.HeadOrDefault(xs) = 
+            xs |> PayrollElem.map (List.tryHead  >> (Option.defaultValue Unchecked.defaultof<_>))
+
         [<CustomOperation("last")>]
         member inline _.Last(xs) = 
             xs |> PayrollElem.map List.last

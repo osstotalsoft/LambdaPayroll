@@ -80,3 +80,12 @@ type GetAllEmployeeContractsSideEffect =
 let getAllEmployeeContracts contractId yearMonth =
     Effect.Of(GetAllEmployeeContractsSideEffect(contractId, yearMonth))
     |> Effect.wrap
+
+type GetAllCompanyContractsSideEffect =
+    | GetAllCompanyContractsSideEffect of yearMonth: YearMonth
+    interface ISideEffect<ContractId list>
+
+let getAllCompanyContracts yearMonth =
+    Effect.Of(GetAllCompanyContractsSideEffect(yearMonth))
+    |> Effect.wrap
+

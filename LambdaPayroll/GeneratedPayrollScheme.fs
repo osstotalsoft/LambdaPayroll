@@ -9,26 +9,67 @@ open NBB.Core.Effects.FSharp
 open System
 open System.Runtime.CompilerServices  
 
-let ContractGrossSalary = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "ContractGrossSalary") { TableName = "hr.Contract"; ColumnName = "GrossSalary" }
+
+type DailyEmployeeWorkingHoursRecord = 
+    { Day: System.Int32;
+      WorkingHours: System.Decimal }
+
+[<Extension>]
+type DailyEmployeeWorkingHoursExtensions =
+    [<Extension>]
+    static member Day (a: PayrollElem<DailyEmployeeWorkingHoursRecord>) = PayrollElem.map (fun x -> x.Day) a
+    [<Extension>]
+    static member WorkingHours (a: PayrollElem<DailyEmployeeWorkingHoursRecord>) = PayrollElem.map (fun x -> x.WorkingHours) a
+
+let DailyEmployeeWorkingHours = 
+    HrAdmin.readCollectionFromDb<DailyEmployeeWorkingHoursRecord>
+            (ElemCode "DailyEmployeeWorkingHours") { 
+                TableName = "hr.DailyEmployeeWorkingHours"
+                Columns = [{ColumnName= "Day"; ColumnDataType = "System.Int32"}; {ColumnName= "WorkingHours"; ColumnDataType = "System.Decimal"}]}
+
+let AverageEmployeesCnt = 
+    elem {
+            let getWorkingHours day = elem {
+                for x in DailyEmployeeWorkingHours do
+                where (x.Day = day)
+                select x.WorkingHours
+                headOrDefault
+            }
+            let referenceNorm = constant 8m
+            let activeEmplAtDay day = elem {
+                let wh = getWorkingHours day
+                for ctr in allCompanyContracts do
+                sumBy' (wh / referenceNorm @ ctr)
+            }
+            let! daysInMonth = daysInMonth
+            let daysInMonthList = constant [1..daysInMonth]
+            for day in daysInMonthList do
+            averageBy' (activeEmplAtDay day)
+        }
+
+let TaxCASPct = 
+    HrAdmin.readScalarFromDb<Int32> (ElemCode "TaxCASPct") { TableName = "hr.Tax"; ColumnName = "CASPct" }
 
 let ComputingPeriodWorkingDaysNo = 
     HrAdmin.readScalarFromDb<Int32> (ElemCode "ComputingPeriodWorkingDaysNo") { TableName = "hr.ComputingPeriod"; ColumnName = "WorkingDaysNo" }
 
+let ContractGrossSalary = 
+    HrAdmin.readScalarFromDb<Decimal> (ElemCode "ContractGrossSalary") { TableName = "hr.Contract"; ColumnName = "GrossSalary" }
+
 let ContractWorkingDayHours = 
     HrAdmin.readScalarFromDb<Int32> (ElemCode "ContractWorkingDayHours") { TableName = "hr.Contract"; ColumnName = "WorkingDayHours" }
 
-let TimesheetTotalWorkedHours = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetTotalWorkedHours") { TableName = "hr.Timesheet"; ColumnName = "TotalWorkedHours" }
+let TimesheetOvertimeHoursFactor = 
+    HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetOvertimeHoursFactor") { TableName = "hr.Timesheet"; ColumnName = "OvertimeHoursFactor" }
 
 let TimesheetPayedAbsenceDays = 
     HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetPayedAbsenceDays") { TableName = "hr.Timesheet"; ColumnName = "PayedAbsenceDays" }
 
+let TimesheetTotalWorkedHours = 
+    HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetTotalWorkedHours") { TableName = "hr.Timesheet"; ColumnName = "TotalWorkedHours" }
+
 let TimesheetTotalWorkedOvertimeHours = 
     HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetTotalWorkedOvertimeHours") { TableName = "hr.Timesheet"; ColumnName = "TotalWorkedOvertimeHours" }
-
-let TimesheetOvertimeHoursFactor = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetOvertimeHoursFactor") { TableName = "hr.Timesheet"; ColumnName = "OvertimeHoursFactor" }
 
 let TotalGrossSalary = 
     let hourWage = ContractGrossSalary / decimal'(ComputingPeriodWorkingDaysNo * ContractWorkingDayHours)
@@ -36,9 +77,6 @@ let TotalGrossSalary =
     let incomeForPaidAbsences = round(hourWage * TimesheetPayedAbsenceDays * decimal'(ContractWorkingDayHours))
     let incomeForWorkedOverTime = round(hourWage * TimesheetTotalWorkedOvertimeHours * TimesheetOvertimeHoursFactor)
     incomeForWorkedTime + incomeForPaidAbsences + incomeForWorkedOverTime
-
-let TaxCASPct = 
-    HrAdmin.readScalarFromDb<Int32> (ElemCode "TaxCASPct") { TableName = "hr.Tax"; ColumnName = "CASPct" }
 
 let CAS = 
     elem {
