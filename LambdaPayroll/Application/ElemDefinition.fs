@@ -52,7 +52,8 @@ module AddFormulaElemDefinition =
     let handle (command: AddFormulaElemDefinition) =
         effect {
             let! store = ElemDefinitionStoreRepo.loadCurrent
-            let! formulaDeps = FormulaParsingService.getFormulaDeps command.Formula
+            let codes = store |> ElemDefinitionStore.getAllCodes |> Set
+            let! formulaDeps = FormulaParsingService.getFormulaDeps command.Formula codes
             let! eventedStore = 
                            ElemDefinitionStore.addFormulaElem
                                (command.ElemCode|> ElemCode) 

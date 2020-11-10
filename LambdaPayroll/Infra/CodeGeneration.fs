@@ -82,19 +82,19 @@ open System.Runtime.CompilerServices
 "
 
     let generateSourceCode (GenerateSourceCodeSideEffect store) =
-        let rec buildLinesMultipleElems(elems: ElemCode list) =
+        let rec buildLinesMultipleElems (allCodes: Set<ElemCode>) (elems: ElemCode list)  =
             state {
-                let! results = elems |> List.traverseState buildLinesSingleElem
+                let! results = elems |> List.traverseState (buildLinesSingleElem allCodes)
                 return results |> List.sequenceResult |> Result.map List.concat
             }
-        and buildLinesSingleElem (elem: ElemCode): State<Set<ElemCode>, Result<string list, string>> =
-            let buildLines elemDefinition =
+        and buildLinesSingleElem (allCodes: Set<ElemCode>) (elem: ElemCode): State<Set<ElemCode>, Result<string list, string>> =
+            let buildLines elemDefinition=
                 let crtLine = elemstatement elemDefinition
                 state {
                     match elemDefinition with
                     | { Type = Formula { Formula = formula } } ->
-                        let deps = formula |> FormulaParser.getDeps |> List.map ElemCode
-                        let! depsLines = deps |> buildLinesMultipleElems
+                        let deps = formula |> FormulaParser.getDeps allCodes |> List.map ElemCode
+                        let! depsLines = deps |> buildLinesMultipleElems allCodes
 
                         return depsLines |> Result.map (append crtLine)
                     | { Type = DbCollection colElemDef} ->
@@ -103,21 +103,22 @@ open System.Runtime.CompilerServices
                     | _ -> return Ok([crtLine])
                 }
             state {
-                let! defs = State.get ()
-                if defs.Contains(elem) then
+                let! processedElems = State.get ()
+                if processedElems.Contains(elem) then
                     return Ok(List.empty)
                 else
                     let! elemResult = 
                         ElemDefinitionStore.findElemDefinition store elem
                         |> Result.traverseState buildLines
                         
-                    do! State.modify(fun state -> state.Add elem)
+                    do! State.modify(fun processedElems -> processedElems.Add elem)
                     return elemResult |> Result.join
             }
           
         let buildProgramLines  = 
             state {
-                let! result = ElemDefinitionStore.getAllCodes store |> buildLinesMultipleElems
+                let allCodes = ElemDefinitionStore.getAllCodes store
+                let! result = allCodes |> buildLinesMultipleElems (allCodes |> Set)
                 return result |> Result.map (prepend header)
             }
 
