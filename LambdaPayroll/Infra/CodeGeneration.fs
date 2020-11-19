@@ -52,7 +52,8 @@ HrAdmin.readCollectionFromDb<%s>
 
     let private elemstatement (elemDefinition: ElemDefinition) =
         let { Code = ElemCode (code) } = elemDefinition
-        let expression = elemExpression elemDefinition
+        //let expression = sprintf "%s |> log \"%s\" |> measure |> memoize " (elemExpression elemDefinition) code
+        let expression = sprintf "%s |> memoize " (elemExpression elemDefinition)
         let tab = "    "
         let indent (str: string) = 
             str.Split([|'\r'; '\n'|], StringSplitOptions.RemoveEmptyEntries)

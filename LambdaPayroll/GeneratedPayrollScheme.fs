@@ -25,7 +25,7 @@ let DailyEmployeeWorkingHours =
     HrAdmin.readCollectionFromDb<DailyEmployeeWorkingHoursRecord>
             (ElemCode "DailyEmployeeWorkingHours") { 
                 TableName = "hr.DailyEmployeeWorkingHours"
-                Columns = [{ColumnName= "Day"; ColumnDataType = "System.Int32"}; {ColumnName= "WorkingHours"; ColumnDataType = "System.Decimal"}]}
+                Columns = [{ColumnName= "Day"; ColumnDataType = "System.Int32"}; {ColumnName= "WorkingHours"; ColumnDataType = "System.Decimal"}]} |> memoize 
 
 let AverageEmployeesCnt = 
     elem {
@@ -45,38 +45,38 @@ let AverageEmployeesCnt =
             let daysInMonthList = constant [1..daysInMonth]
             for day in daysInMonthList do
             averageBy' (activeEmplAtDay day)
-        }
+        } |> memoize 
 
 let TaxCASPct = 
-    HrAdmin.readScalarFromDb<Int32> (ElemCode "TaxCASPct") { TableName = "hr.Tax"; ColumnName = "CASPct" }
+    HrAdmin.readScalarFromDb<Int32> (ElemCode "TaxCASPct") { TableName = "hr.Tax"; ColumnName = "CASPct" } |> memoize 
 
 let ComputingPeriodWorkingDaysNo = 
-    HrAdmin.readScalarFromDb<Int32> (ElemCode "ComputingPeriodWorkingDaysNo") { TableName = "hr.ComputingPeriod"; ColumnName = "WorkingDaysNo" }
+    HrAdmin.readScalarFromDb<Int32> (ElemCode "ComputingPeriodWorkingDaysNo") { TableName = "hr.ComputingPeriod"; ColumnName = "WorkingDaysNo" } |> memoize 
 
 let ContractGrossSalary = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "ContractGrossSalary") { TableName = "hr.Contract"; ColumnName = "GrossSalary" }
+    HrAdmin.readScalarFromDb<Decimal> (ElemCode "ContractGrossSalary") { TableName = "hr.Contract"; ColumnName = "GrossSalary" } |> memoize 
 
 let ContractWorkingDayHours = 
-    HrAdmin.readScalarFromDb<Int32> (ElemCode "ContractWorkingDayHours") { TableName = "hr.Contract"; ColumnName = "WorkingDayHours" }
+    HrAdmin.readScalarFromDb<Int32> (ElemCode "ContractWorkingDayHours") { TableName = "hr.Contract"; ColumnName = "WorkingDayHours" } |> memoize 
 
 let TimesheetOvertimeHoursFactor = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetOvertimeHoursFactor") { TableName = "hr.Timesheet"; ColumnName = "OvertimeHoursFactor" }
+    HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetOvertimeHoursFactor") { TableName = "hr.Timesheet"; ColumnName = "OvertimeHoursFactor" } |> memoize 
 
 let TimesheetPayedAbsenceDays = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetPayedAbsenceDays") { TableName = "hr.Timesheet"; ColumnName = "PayedAbsenceDays" }
+    HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetPayedAbsenceDays") { TableName = "hr.Timesheet"; ColumnName = "PayedAbsenceDays" } |> memoize 
 
 let TimesheetTotalWorkedHours = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetTotalWorkedHours") { TableName = "hr.Timesheet"; ColumnName = "TotalWorkedHours" }
+    HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetTotalWorkedHours") { TableName = "hr.Timesheet"; ColumnName = "TotalWorkedHours" } |> memoize 
 
 let TimesheetTotalWorkedOvertimeHours = 
-    HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetTotalWorkedOvertimeHours") { TableName = "hr.Timesheet"; ColumnName = "TotalWorkedOvertimeHours" }
+    HrAdmin.readScalarFromDb<Decimal> (ElemCode "TimesheetTotalWorkedOvertimeHours") { TableName = "hr.Timesheet"; ColumnName = "TotalWorkedOvertimeHours" } |> memoize 
 
 let TotalGrossSalary = 
     let hourWage = ContractGrossSalary / decimal'(ComputingPeriodWorkingDaysNo * ContractWorkingDayHours)
     let incomeForWorkedTime = round(hourWage * TimesheetTotalWorkedHours)
     let incomeForPaidAbsences = round(hourWage * TimesheetPayedAbsenceDays * decimal'(ContractWorkingDayHours))
     let incomeForWorkedOverTime = round(hourWage * TimesheetTotalWorkedOvertimeHours * TimesheetOvertimeHoursFactor)
-    incomeForWorkedTime + incomeForPaidAbsences + incomeForWorkedOverTime
+    incomeForWorkedTime + incomeForPaidAbsences + incomeForWorkedOverTime |> memoize 
 
 let CAS = 
     elem {
@@ -85,10 +85,10 @@ let CAS =
         let! taxCASPct = TaxCASPct
         let interimCAS = baseCAS * decimal taxCASPct / 100m
         return if interimCAS > 0m && interimCAS < 1m then 1m else round interimCAS
-    }
+    } |> memoize 
 
 let TaxCASSPct = 
-    HrAdmin.readScalarFromDb<Int32> (ElemCode "TaxCASSPct") { TableName = "hr.Tax"; ColumnName = "CASSPct" }
+    HrAdmin.readScalarFromDb<Int32> (ElemCode "TaxCASSPct") { TableName = "hr.Tax"; ColumnName = "CASSPct" } |> memoize 
 
 let CASS = 
     elem {
@@ -97,13 +97,13 @@ let CASS =
         let! taxCASSPct = TaxCASSPct
         let interimCASS = baseCASS * decimal taxCASSPct / 100m
         return if interimCASS > 0m && interimCASS < 1m then 1m else round interimCASS
-    }
+    } |> memoize 
 
 let ContractDeductedPersonsCount = 
-    HrAdmin.readScalarFromDb<Int32> (ElemCode "ContractDeductedPersonsCount") { TableName = "hr.Contract"; ColumnName = "DeductedPersonsCount" }
+    HrAdmin.readScalarFromDb<Int32> (ElemCode "ContractDeductedPersonsCount") { TableName = "hr.Contract"; ColumnName = "DeductedPersonsCount" } |> memoize 
 
 let ContractIsBasePosition = 
-    HrAdmin.readScalarFromDb<Boolean> (ElemCode "ContractIsBasePosition") { TableName = "hr.Contract"; ColumnName = "IsBasePosition" }
+    HrAdmin.readScalarFromDb<Boolean> (ElemCode "ContractIsBasePosition") { TableName = "hr.Contract"; ColumnName = "IsBasePosition" } |> memoize 
 
 type DeductionsRecord = 
     { RangeStart: System.Decimal;
@@ -126,7 +126,7 @@ let Deductions =
     HrAdmin.readCollectionFromDb<DeductionsRecord>
             (ElemCode "Deductions") { 
                 TableName = "hr.Deduction"
-                Columns = [{ColumnName= "RangeStart"; ColumnDataType = "System.Decimal"}; {ColumnName= "RangeEnd"; ColumnDataType = "System.Decimal"}; {ColumnName= "Value"; ColumnDataType = "System.Decimal"}; {ColumnName= "DeductedPersonsCount"; ColumnDataType = "System.Decimal"}]}
+                Columns = [{ColumnName= "RangeStart"; ColumnDataType = "System.Decimal"}; {ColumnName= "RangeEnd"; ColumnDataType = "System.Decimal"}; {ColumnName= "Value"; ColumnDataType = "System.Decimal"}; {ColumnName= "DeductedPersonsCount"; ColumnDataType = "System.Decimal"}]} |> memoize 
 
 let Deduction = 
     elem {
@@ -171,10 +171,10 @@ let Deduction =
         return! when' isLastContract 
             (allContractsDeduction - sumDeductionAllContractsWithoutLastOne)
             deduction
-    }
+    } |> memoize 
 
 let TaxImpozitPct = 
-    HrAdmin.readScalarFromDb<Int32> (ElemCode "TaxImpozitPct") { TableName = "hr.Tax"; ColumnName = "ImpozitPct" }
+    HrAdmin.readScalarFromDb<Int32> (ElemCode "TaxImpozitPct") { TableName = "hr.Tax"; ColumnName = "ImpozitPct" } |> memoize 
 
 let Impozit = 
     elem {
@@ -184,6 +184,7 @@ let Impozit =
             if interimImpozit > 0m && interimImpozit < 1m 
             then 1m
             else round interimImpozit
-    }
+    } |> memoize 
 
-let Net = TotalGrossSalary - CAS - CASS - Impozit
+let Net = 
+    TotalGrossSalary - CAS - CASS - Impozit |> memoize 

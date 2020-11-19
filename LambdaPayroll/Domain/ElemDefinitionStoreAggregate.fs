@@ -79,7 +79,7 @@ module ElemDefinitionStore =
     let addFormulaElem (code:ElemCode) (formulaElemDefinition: FormulaElemDefinition) (dataType: Type) (store: ElemDefinitionStore) =
         effect {
             if store.ElemDefinitions.ContainsKey code 
-            then do! Exception.throw "Elem already defined"
+            then do! Exception.throw "Elem already defined"            
             return evented {
                 let elemDef = {
                     Code = code
@@ -108,6 +108,6 @@ module ElemDefinitionStoreRepo =
     type SaveElemDefinitionStoreSideEffect = SaveElemDefinitionStoreSideEffect of store: ElemDefinitionStore * events: ElemDefinitionStoreEvent list
         with interface ISideEffect<unit>
 
-    let loadCurrent = Effect.Of (LoadCurrentElemDefinitionStoreSideEffect ()) |> Effect.wrap
-    let save store = Effect.Of (SaveElemDefinitionStoreSideEffect store) |> Effect.wrap
+    let loadCurrent = Effect.Of (LoadCurrentElemDefinitionStoreSideEffect ())
+    let save store = Effect.Of (SaveElemDefinitionStoreSideEffect store)
 

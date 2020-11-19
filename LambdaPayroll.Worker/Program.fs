@@ -75,7 +75,7 @@ let main argv =
                         .UseCorrelationMiddleware()
                         .UseExceptionHandlingMiddleware()
                         .UseDefaultResiliencyMiddleware()
-                        .UseEffectMiddleware(fun m -> m |> applicationPipeline |> Effect.unWrap |> EffectExtensions.ToUnit)
+                        .UseEffectMiddleware(fun m -> m |> applicationPipeline |> EffectExtensions.ToUnit)
                         |> ignore
                 )
             |> ignore

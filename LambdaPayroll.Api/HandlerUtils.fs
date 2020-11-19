@@ -9,7 +9,7 @@ module MessageBus =
     open NBB.Core.Effects.FSharp
     open NBB.Messaging.Effects
 
-    let publish (obj: 'TMessage) =  MessageBus.Publish (obj :> obj) |> Effect.wrap |> Effect.ignore
+    let publish (obj: 'TMessage) =  MessageBus.Publish (obj :> obj) |> Effect.ignore
 
 module HandlerUtils =
     open Giraffe
@@ -28,7 +28,7 @@ module HandlerUtils =
         fun (next : HttpFunc) (ctx : HttpContext) ->
             task {
                 let interpreter = ctx.RequestServices.GetRequiredService<IInterpreter>()
-                let! result = interpreter.Interpret(effect |> Effect.unWrap)
+                let! result = interpreter.Interpret(effect)
                 return! (result |> resultHandler) next ctx
             }   
 

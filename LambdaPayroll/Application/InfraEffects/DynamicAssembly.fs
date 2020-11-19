@@ -38,7 +38,6 @@ module DynamicAssemblyService =
 
     let compile sourceCode =
         Effect.Of(CompileDynamicAssemblySideEffect sourceCode)
-        |> Effect.wrap
 
 module DynamicAssemblyCache =
     type GetDynamicAssemblySideEffect() =
@@ -50,8 +49,6 @@ module DynamicAssemblyCache =
 
     let get =
         Effect.Of(GetDynamicAssemblySideEffect())
-        |> Effect.wrap
 
     let set assembly =
         Effect.Of(SetDynamicAssemblySideEffect assembly)
-        |> Effect.wrap

@@ -27,13 +27,12 @@ module InteractiveEvalSessionService =
 
     let create sourceCode =
         Effect.Of(CreateInteractiveEvalSessionSideEffect sourceCode)
-        |> Effect.wrap
 
     type EvalInteractionSideEffect =
         | EvalInteractionSideEffect of session: InteractiveEvaluationSession * expression: string
         interface ISideEffect<Result<obj, ErrorInfo list>>
 
-    let evalInteraction sideEff = Effect.Of (EvalInteractionSideEffect sideEff) |> Effect.wrap
+    let evalInteraction sideEff = Effect.Of (EvalInteractionSideEffect sideEff)
 
 module InteractiveEvalSessionCache =
     type GetInteractiveEvalSessionSideEffect() =
@@ -45,8 +44,6 @@ module InteractiveEvalSessionCache =
 
     let get =
         Effect.Of(GetInteractiveEvalSessionSideEffect())
-        |> Effect.wrap
 
     let set session =
         Effect.Of(SetInteractiveEvalSessionSideEffect session)
-        |> Effect.wrap

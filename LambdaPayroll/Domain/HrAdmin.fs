@@ -14,8 +14,7 @@ let loadScalar definition: PayrollElem<obj> =
     PayrollElem(fun ctx ->
         (Effect.Of
             { Definition = definition
-              Context = ctx })
-        |> Effect.wrap)
+              Context = ctx }))
 
 type LoadCollectionSideEffect =
     { Definition: DbCollectionElemDefinition
@@ -26,8 +25,7 @@ let loadCollection<'a> definition: PayrollElem<obj [] list> =
     PayrollElem(fun ctx ->
         (Effect.Of
             { Definition = definition
-              Context = ctx })
-        |> Effect.wrap)
+              Context = ctx }))
 
 
 let readScalarFromDb<'a> (ElemCode code) (dbScalarElemDefinition: DbScalarElemDefinition): PayrollElem<'a> =
@@ -70,8 +68,6 @@ type GetOtherEmployeeContractsSideEffect =
 
 let getOtherEmployeeContracts contractId =
     (Effect.Of(GetOtherEmployeeContractsSideEffect contractId))
-    |> Effect.wrap
-
 
 type GetAllEmployeeContractsSideEffect =
     | GetAllEmployeeContractsSideEffect of contractId: ContractId * yearMonth: YearMonth
@@ -79,7 +75,6 @@ type GetAllEmployeeContractsSideEffect =
 
 let getAllEmployeeContracts contractId yearMonth =
     Effect.Of(GetAllEmployeeContractsSideEffect(contractId, yearMonth))
-    |> Effect.wrap
 
 type GetAllCompanyContractsSideEffect =
     | GetAllCompanyContractsSideEffect of yearMonth: YearMonth
@@ -87,5 +82,4 @@ type GetAllCompanyContractsSideEffect =
 
 let getAllCompanyContracts yearMonth =
     Effect.Of(GetAllCompanyContractsSideEffect(yearMonth))
-    |> Effect.wrap
 
