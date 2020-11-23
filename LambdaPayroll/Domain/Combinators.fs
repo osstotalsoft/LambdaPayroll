@@ -81,7 +81,7 @@ module HrCombinators =
                     |> PayrollElemResult.return'
 
                 return! otherContractsElemResults
-            })
+            }) |> memoize
 
     let allEmployeeContracts: PayrollElem<PayrollElemContext list> =
         PayrollElem(fun (contractId, yearMonth) ->
@@ -94,10 +94,10 @@ module HrCombinators =
                     |> PayrollElemResult.return'
 
                 return! allContractsElemResults
-            })
+            }) |> memoize
 
     let allCompanyContracts: PayrollElem<PayrollElemContext list> =
-        PayrollElem(fun (contractId, yearMonth) ->
+        PayrollElem(fun (_contractId, yearMonth) ->
             effect {
                 let! allContracts = HrAdmin.getAllCompanyContracts yearMonth
 
@@ -107,4 +107,4 @@ module HrCombinators =
                     |> PayrollElemResult.return'
 
                 return! allContractsElemResults
-            }) |> log "allCompanyContracts" |> measure |> memoize
+            }) |> memoize
