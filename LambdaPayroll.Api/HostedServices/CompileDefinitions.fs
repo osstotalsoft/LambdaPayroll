@@ -13,7 +13,7 @@ type CompileDefinitions (interpreter: IInterpreter) =
         member _.StartAsync (ct: CancellationToken) =
             task {
                 let effect = Mediator.sendCommand <| Compilation.Compile.Command ()
-                do! interpreter.Interpret(effect |> Effect.unWrap |> EffectExtensions.ToUnit, ct)
+                do! interpreter.Interpret(effect, ct)
             } :> Task
         member _.StopAsync (_ct: CancellationToken) = Task.CompletedTask
 

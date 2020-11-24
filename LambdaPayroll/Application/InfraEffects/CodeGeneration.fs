@@ -12,7 +12,6 @@ module CodeGenerationService =
 
     let generateSourceCode elemDefinitionStore =
         Effect.Of(GenerateSourceCodeSideEffect elemDefinitionStore)
-        |> Effect.wrap
 
     type GenerateExpresionSideEffect =
         | GenerateExpressionSideEffect of formula: string
@@ -20,7 +19,6 @@ module CodeGenerationService =
 
     let generatExpression formula =
         Effect.Of(GenerateExpressionSideEffect formula)
-        |> Effect.wrap
 
 
 module GeneratedCodeCache =
@@ -33,8 +31,6 @@ module GeneratedCodeCache =
 
     let get =
         Effect.Of(GetGeneratedCodeSideEffect())
-        |> Effect.wrap
 
     let set sourceCode =
         Effect.Of(SetGeneratedCodeSideEffect sourceCode)
-        |> Effect.wrap

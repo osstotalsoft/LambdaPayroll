@@ -17,7 +17,7 @@ module ElemRepo =
         | FindPayrollElemSideEffect of store:ElemStore * elemCode: ElemCode
         interface ISideEffect<Result<PayrollElem<obj>, string>>
      
-    let findPayrollElem elemCode = Effect.Of (FindPayrollElemSideEffect elemCode) |> Effect.wrap
+    let findPayrollElem elemCode = Effect.Of (FindPayrollElemSideEffect elemCode)
 
 type InteractiveEvaluationSession =  InteractiveEvaluationSession of FsiEvaluationSession
 
@@ -27,7 +27,7 @@ module InteractivePayrollElemService =
         | EvalToPayrollElemSideEffect of session: InteractiveEvaluationSession * expression: string
         interface ISideEffect<Result<PayrollElem<obj>, string>>
 
-    let evalToPayrollElem expression = Effect.Of (EvalToPayrollElemSideEffect expression) |> Effect.wrap
+    let evalToPayrollElem expression = Effect.Of (EvalToPayrollElemSideEffect expression)
 
 module ElemEvaluationService =
     type EvaluateElem = ElemStore -> ElemCode -> PayrollElemContext -> Effect<Result<obj, string>>

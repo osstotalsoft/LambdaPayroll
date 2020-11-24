@@ -8,7 +8,7 @@ module Exception =
     type ExceptionSideEffect = ExceptionSideEffect of string
     with interface ISideEffect<unit>
 
-    let throw = Effect.wrap << Effect.Of << ExceptionSideEffect
+    let throw = Effect.Of << ExceptionSideEffect
 
 [<AutoOpen>]
 module ListExtensions =

@@ -12,4 +12,3 @@ module FormulaParsingService =
 
     let getFormulaDeps formula allcodes =
         Effect.Of(GetFormulaDepsSideEffect(formula, allcodes))
-        |> Effect.wrap

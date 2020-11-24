@@ -9,7 +9,6 @@ open NBB.Core.Abstractions
 module MessageBus =
     let publish (obj: 'TMessage) =
         MessageBus.Publish(obj :> obj)
-        |> Effect.wrap
         |> Effect.ignore
 
 type Mediator =
@@ -23,7 +22,7 @@ module Mediator =
         interface ISideEffect<Mediator>
 
     let private getMediator =
-        Effect.Of(GetMediatorSideEffect) |> Effect.wrap
+        Effect.Of(GetMediatorSideEffect)
 
     let dispatchEvent (event: #IEvent) =
         getMediator

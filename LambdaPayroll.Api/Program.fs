@@ -94,6 +94,7 @@ module App =
             .AddSideEffectHandler(DbElemValue.loadScalar hcmConnectionString)
             .AddSideEffectHandler(DbElemValue.loadCollection hcmConnectionString)
             .AddSideEffectHandler(DbElemValue.getAllEmployeeContracts hcmConnectionString)
+            .AddSideEffectHandler(DbElemValue.getAllCompanyContracts hcmConnectionString)
             .AddSideEffectHandler(DbElemValue.getOtherEmployeeContracts hcmConnectionString)
             .AddSideEffectHandler(InteractiveEvalSessionCache.get)
             .AddSideEffectHandler(InteractiveEvalSessionCache.set)
@@ -134,7 +135,7 @@ module App =
                         .UseCorrelationMiddleware()
                         .UseExceptionHandlingMiddleware()
                         .UseDefaultResiliencyMiddleware()
-                        .UseEffectMiddleware(fun m -> m |> applicationPipeline |> Effect.unWrap |> EffectExtensions.ToUnit)
+                        .UseEffectMiddleware(fun m -> m |> applicationPipeline |> EffectExtensions.ToUnit)
                         |> ignore
                 )
             |> ignore

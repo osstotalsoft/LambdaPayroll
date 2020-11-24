@@ -7,6 +7,45 @@ open ElemAlgebra
 
 
 [<AutoOpen>]
+module UtilityCombinators =
+    let log elemCode (elem: PayrollElem<'a>) =
+        PayrollElem(fun ((ContractId contractId), (YearMonth (year, month))) ->
+            effect {
+                printfn
+                    "*** LOG *** evaluating elem %A on contractId:%A year:%A month:%A "
+                    elemCode
+                    contractId
+                    year
+                    month
+                return! run elem ((ContractId contractId), (YearMonth(year, month)))
+            })
+
+    let measure (elem: PayrollElem<'a>) =
+        PayrollElem(fun ((ContractId contractId), (YearMonth (year, month))) ->
+            effect {
+                let stopWatch = System.Diagnostics.Stopwatch.StartNew()
+
+                let! value = run elem ((ContractId contractId), (YearMonth(year, month)))
+
+                stopWatch.Stop()
+                printfn "Elapsed: %f ms" stopWatch.Elapsed.TotalMilliseconds
+                return value
+            })
+
+    let memoize (elem: PayrollElem<'a>): PayrollElem<'a> =
+        PayrollElem(fun (ctx: PayrollElemContext) ->
+            effect {
+                let! cachedValue = ElemCache.get elem ctx
+
+                if cachedValue.IsSome then
+                    return cachedValue.Value
+                else
+                    let! value = run elem ctx
+                    do! ElemCache.set elem ctx value
+                    return value
+            })
+
+[<AutoOpen>]
 module HrCombinators =
     let lastMonth (elem: PayrollElem<'a>): PayrollElem<'a> =
         PayrollElem(fun (contractId, yearMonth) -> 
@@ -42,7 +81,7 @@ module HrCombinators =
                     |> PayrollElemResult.return'
 
                 return! otherContractsElemResults
-            })
+            }) |> memoize
 
     let allEmployeeContracts: PayrollElem<PayrollElemContext list> =
         PayrollElem(fun (contractId, yearMonth) ->
@@ -55,31 +94,17 @@ module HrCombinators =
                     |> PayrollElemResult.return'
 
                 return! allContractsElemResults
-            })
+            }) |> memoize
 
-[<AutoOpen>]
-module UtilityCombinators =
-    let log elemCode (PayrollElem elem: PayrollElem<'a>) =
-        fun ((ContractId contractId), (YearMonth (year, month))) ->
+    let allCompanyContracts: PayrollElem<PayrollElemContext list> =
+        PayrollElem(fun (_contractId, yearMonth) ->
             effect {
-                printfn
-                    "*** LOG *** evaluating elem %A on contractId:%A year:%A month:%A "
-                    elemCode
-                    contractId
-                    year
-                    month
-                return! elem ((ContractId contractId), (YearMonth(year, month)))
-            }
+                let! allContracts = HrAdmin.getAllCompanyContracts yearMonth
 
-    let memoize (elem: PayrollElem<'a>): PayrollElem<'a> =
-        PayrollElem(fun (ctx: PayrollElemContext) ->
-            effect {
-                let! cachedValue = ElemCache.get elem ctx
+                let allContractsElemResults =
+                    allContracts
+                    |> List.map (fun x -> (x, yearMonth))
+                    |> PayrollElemResult.return'
 
-                if cachedValue.IsSome then
-                    return cachedValue.Value
-                else
-                    let! value = run elem ctx
-                    do! ElemCache.set elem ctx value
-                    return value
-            })
+                return! allContractsElemResults
+            }) |> memoize
