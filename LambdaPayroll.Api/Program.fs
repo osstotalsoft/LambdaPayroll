@@ -62,6 +62,7 @@ module App =
                |> ignore
 
     let configureApp (app : IApplicationBuilder) =
+        
         let env = app.ApplicationServices.GetService<IWebHostEnvironment>()
         (match env.IsDevelopment() with
         | true  -> app.UseDeveloperExceptionPage()
@@ -75,11 +76,8 @@ module App =
         let payrollConnString = context.Configuration.GetConnectionString "LambdaPayroll"
         let hcmConnectionString = context.Configuration.GetConnectionString "Hcm"
 
-        let mediator =
-            { SendCommand = WriteApplication.sendCommand
-              SendQuery = ReadApplication.sendQuery'
-              DispatchEvent = WriteApplication.publishEvent }
-        
+        services.AddMvc(fun options -> options.EnableEndpointRouting = true |> ignore) |> ignore
+
         services.AddHostedService<HostedServices.CompileDefinitions>() |> ignore
         services.AddEffects() |> ignore
         services.AddMessagingEffects() |> ignore
@@ -100,7 +98,7 @@ module App =
             .AddSideEffectHandler(InteractiveEvalSessionCache.set)
             .AddSideEffectHandler(InteractiveSession.createSession)
             .AddSideEffectHandler(InteractiveSession.evalToPayrollElem )
-            .AddSideEffectHandler(Mediator.handleGetMediator mediator)
+            .AddSideEffectHandler(Mediator.getReadApplicationMediator)
             .AddSideEffectHandler(CodeGenerationService.generateSourceCode)
             .AddSideEffectHandler(CodeGenerationService.generateExpression)
             .AddSideEffectHandler(DynamicAssemblyService.findPayrollElem)

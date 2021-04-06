@@ -28,11 +28,6 @@ let configuration =
 let payrollConnString = configuration.GetConnectionString "LambdaPayroll"
 let hcmConnectionString = configuration.GetConnectionString "Hcm"
 
-let mediator =
-    { SendCommand = WriteApplication.sendCommand;
-      SendQuery = ReadApplication.sendQuery'
-      DispatchEvent = WriteApplication.publishEvent}
-
 let services = ServiceCollection();
 services.AddEffects() |> ignore
 services
@@ -45,7 +40,7 @@ services
     .AddSideEffectHandler(GeneratedCodeCache.get)
     .AddSideEffectHandler(GeneratedCodeCache.set)
     .AddSideEffectHandler(DynamicAssemblyService.compile)
-    .AddSideEffectHandler(Mediator.handleGetMediator mediator)
+    .AddSideEffectHandler(Mediator.getReadApplicationMediator)
     .AddSideEffectHandler(DbElemValue.getAllEmployeeContracts hcmConnectionString)
     .AddSideEffectHandler(DbElemValue.getAllCompanyContracts hcmConnectionString)
     .AddSideEffectHandler(InteractiveEvalSessionCache.get)

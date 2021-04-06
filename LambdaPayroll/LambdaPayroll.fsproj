@@ -25,6 +25,7 @@
     <Compile Include="Application\ElemDefinition.fs" />
     <Compile Include="Application\Evaluation.fs" />
     <Compile Include="Application\Application.fs" />
+    <Compile Include="Infra\Mediator.fs" />
     <Compile Include="Infra\CommandHandler.fs" />
     <Compile Include="Infra\Common.fs" />
     <Compile Include="Infra\DataAccess.fs" />

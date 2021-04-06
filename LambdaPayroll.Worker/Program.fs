@@ -49,10 +49,6 @@ let main argv =
                 | :? IEvent as event -> Mediator.dispatchEvent event
                 | _ -> failwith "Invalid message"
 
-        let mediator = {
-            SendCommand = WriteApplication.sendCommand; 
-            SendQuery = WriteApplication.sendQuery'; 
-            DispatchEvent = WriteApplication.publishEvent}
 
         services.AddEffects() |> ignore
         services.AddMessagingEffects() |> ignore
@@ -61,7 +57,7 @@ let main argv =
             .AddSideEffectHandler(ElemDefinitionStoreRepo.save payrollConnString)
             .AddSideEffectHandler(DynamicAssemblyService.compile)
             .AddSideEffectHandler(Common.handleException)
-            .AddSideEffectHandler(Mediator.handleGetMediator mediator)
+            .AddSideEffectHandler(Mediator.getWriteApplicationMediator)
             |> ignore;
 
         services.AddResiliency() |> ignore

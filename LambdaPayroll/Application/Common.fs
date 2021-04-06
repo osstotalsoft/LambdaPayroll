@@ -11,15 +11,16 @@ module MessageBus =
         MessageBus.Publish(obj :> obj)
         |> Effect.ignore
 
-type Mediator =
-    { DispatchEvent: IEvent -> Effect<unit>
-      SendCommand: ICommand -> Effect<unit>
-      SendQuery: IQuery -> Effect<obj> }
+type IMediator = 
+    abstract member DispatchEvent: IEvent -> Effect<unit>
+    abstract member SendCommand: ICommand -> Effect<unit>
+    abstract member SendQuery: IQuery<'a> -> Effect<'a>
+          
 
 module Mediator =
     type GetMediatorSideEffect =
         | GetMediatorSideEffect
-        interface ISideEffect<Mediator>
+        interface ISideEffect<IMediator>
 
     let private getMediator =
         Effect.Of(GetMediatorSideEffect)
@@ -39,7 +40,5 @@ module Mediator =
     let sendQuery (query: #IQuery<'TResponse>) =
         getMediator
         |> Effect.bind (fun mediator ->
-            mediator.SendQuery(query :> IQuery)
-            |> Effect.map unbox<'TResponse>)
+            mediator.SendQuery(query))
 
-    let handleGetMediator (m: Mediator) (_: GetMediatorSideEffect) = m

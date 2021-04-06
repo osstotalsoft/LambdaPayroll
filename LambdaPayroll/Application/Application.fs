@@ -4,6 +4,7 @@ open NBB.Application.Mediator.FSharp
 open NBB.Core.Effects.FSharp
 
 open System
+open NBB.Core.Abstractions
 
 module Middleware = 
 
@@ -54,9 +55,6 @@ module ReadApplication =
     let sendQuery (query: 'TQuery) = 
         QueryMidleware.run queryPipeline query |> terminateRequest
     
-    let sendQuery' (query: IQuery) = 
-        RequestMiddleware.run queryPipeline query |> terminateRequest
-
     let sendCommand (cmd: 'TCommand) =
         CommandMiddleware.run commandPipeline cmd |> terminateRequest
 
@@ -66,7 +64,6 @@ module WriteApplication =
     open RequestMiddleware
     open CommandHandler
     open LambdaPayroll.Application.Compilation
-    open NBB.Core.Abstractions
     open Middleware
     open PipelineUtils
 
@@ -88,4 +85,4 @@ module WriteApplication =
 
     let sendCommand (cmd: 'TCommand) = CommandMiddleware.run commandPipeline cmd |> terminateRequest
     let publishEvent (ev: 'TEvent) = EventMiddleware.run eventPipeline ev |> terminateEvent
-    let sendQuery' (q: IQuery) = RequestHandler.empty q |> terminateRequest
+    let sendQuery (q: #IQuery<'a>) : Effect<'a> = RequestHandler.empty q |> terminateRequest
